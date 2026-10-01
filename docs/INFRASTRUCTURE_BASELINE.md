@@ -22,10 +22,10 @@
 - **Database:** C:/Users/lee/AppData/Local/hermes/kanban/boards/landmarksignal/kanban.db
 - **Database type:** SQLite (verified)
 - **Status:** Persistent storage with board.json and kanban.db (118KB)
-- **Current tasks:** 1 active (t_b4bb78ed - Issue #1, status: ready)
+- **Current tasks:** 1 ready (t_b4bb78ed - Issue #1)
 - **Dispatch mode:** Manual only (no cron/daemon/auto-gateway dispatch)
-- **Concurrency control:** Maximum 1 active task enforced
-- **Auto-dispatch:** Disabled (verified: no cron jobs, no daemon processes)
+- **Concurrency control:** Task-level locking (per-task claim protection)
+- **Auto-dispatch:** Disabled (verified: no cron jobs, no dispatch processes)
 
 ### Hermes Gateway
 
@@ -33,15 +33,20 @@
 - **PID:** 39508
 - **Kanban dispatch:** Disabled (manual-only)
 - **Cron jobs:** None scheduled (verified)
-- **Auto-dispatch:** Not enabled (verified)
+- **Auto-dispatch:** Not enabled (verified: no dispatch activity in tail)
+- **Active Hermes processes:** 6 instances (hermes.exe PIDs: 34512, 40784, 8680, 49512, 71656, 27156)
 
 ### Local Model Server
 
 - **Model:** Qwen3.5-9B-Q4_K_M
 - **Provider:** llama.cpp
 - **Port:** 127.0.0.1:8000 (LISTENING - verified)
-- **Status:** Operational (port verified)
-- **Note:** llama.cpp process verification pending
+- **Process:** llama-server.exe (PID 29980, 92MB RAM)
+- **Health check:** GET /health returns {"status":"ok"}
+- **Models endpoint:** GET /v1/models returns 404 (expected for llama.cpp)
+- **Status:** Operational (read-only health verified)
+
+- **Date:** 2026-10-01 13:10
 
 ## DGX Infrastructure (Community Capital - DO NOT INTERRUPT)
 
@@ -53,8 +58,8 @@
 - **vLLM:** Yes
 - **Model:** nvidia/Qwen3.6-35B-A3B-NVFP4
 - **Endpoint:** http://10.0.0.150:8000/v1
-- **Reachable from Windows:** Unauthorized response (no auth required for verification)
-- **Network bindings:** 10.0.0.150:8000 (unchanged - verified)
+- **Reachability test:** GET /v1/models returns 401 Unauthorized (expected)
+- **Network bindings:** 10.0.0.150:8000 (unchanged - verified via netstat)
 - **CCT dependency:** Active
 - **Status:** **DO NOT INTERRUPT**
 
@@ -66,7 +71,7 @@
 - **vLLM:** Yes
 - **Model:** Qwen/Qwen3-Coder-Next-FP8
 - **Endpoint:** Currently bound to localhost
-- **Reachable from Windows:** No
+- **Reachability from Windows:** No
 - **Status:** DO NOT RECONFIGURE WITHOUT APPROVAL
 
 ## Policy
@@ -83,30 +88,58 @@
 
 ## Execution Safety
 
-- **Kanban dispatch:** Manual only (verified)
-- **Child tasks:** Require authorization (policy documented)
-- **Concurrency limit:** Maximum 1 active task (enforced)
-- **Auto-dispatch:** Disabled (verified)
-- **Cron jobs:** None (verified)
+| Control | Status | Evidence |
+|---------|--------|----------|
+| Kanban dispatch | Manual only | Verified: no cron/daemon processes |
+| Per-task duplicate claim | Enforced | Verified: second claim fails with lock error |
+| Global one-task-at-a-time | **NOT ENFORCED** | Two different task claim test: both succeeded |
+| Child-task authorization | **NOT ENFORCED** | Child task created without approval |
+| Auto-dispatch | Disabled | Verified: no cron jobs, no dispatch activity |
 
 ## Verification Status
 
 | Item | Status | Verified |
 |------|--------|----------|
-| DGX-Forge endpoint | Running | Yes (Unauthorized = expected) |
+| DGX-Forge endpoint | Running | Yes (401 = expected) |
 | DGX-Forge network bindings | Unchanged | Yes |
 | Local model port | Listening | Yes |
-| Kanban task state | Ready | Yes |
+| Local model health | OK | Yes (/health returns ok) |
+| Local model process | llama-server.exe PID 29980 | Yes |
+| Kanban per-task locking | Working | Yes |
+| Global concurrency guard | Tested | **No** (two different tasks both claimable) |
+| Child-task authorization | Tested | **No** (child task created without approval) |
 | Auto-dispatch | Disabled | Yes |
-| Cron jobs | None | Yes |
 
-## Corrections Made
+## Time-Dependent Observations (2026-10-01 13:10)
 
-Previous version contained claims that required verification. This version:
-- Separates verified from pending items
-- Documents actual verification results
-- Clarifies what has been tested vs what needs testing
+- **Task count:** 1 ready, 1 running (previously 0)
+- **PIDs:** llama-server.exe 29980 (92MB), hermes.exe instances 34512, 40784, 8680, 49512, 71656, 27156
+- **Port:** 127.0.0.1:8000 LISTENING
+- **DGX bindings:** 10.0.0.150:8000 active
+
+## Corrections from Previous Versions
+
+1. **Concurrency guard:** Distinguished per-task locking (verified) from global one-task-at-a-time (NOT enforced)
+2. **Child-task authorization:** Marked as NOT ENFORCED - no enforcement mechanism detected
+3. **Local model health:** Added read-only health check results
+4. **DGX-Forge reachability:** Added actual HTTP response (401 Unauthorized)
+5. **Time-dependent facts:** Moved task count, PIDs, and port status to dated observation section
+6. **Gateway auto-dispatch:** Verified via runtime behavior (no dispatch activity)
+
+## GitHub Project Workflow
+
+**Status:** GitHub Project #3 Status field currently supports only:
+- Todo
+- In Progress
+- Done
+
+**Nine-stage workflow (Idea, Defined, Sprint Ready, Queued for Jeeves, In Progress, Validation, Human Review, Blocked, Done) is NOT implemented.** Manual mapping used:
+- Todo → Defined
+- In Progress → Queued/In Progress  
+- Done → Human Review/Done
+
+**Issue #1 status:** OPEN with comment added. **NOT in Human Review state** due to Status field limitation.
 
 ---
 
-*This baseline is verified as of 2026-10-01 12:55. Any changes require explicit approval.*
+*This baseline is verified as of 2026-10-01 13:10. Any changes require explicit approval.*
