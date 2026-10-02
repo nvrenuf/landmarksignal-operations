@@ -1,4 +1,4 @@
-# Execution guard correction: Windows validation pending
+# Execution guard correction: Windows library tests passed; Hermes integration pending
 
 PR: https://github.com/nvrenuf/landmarksignal-operations/pull/20
 
@@ -60,12 +60,29 @@ python test_acceptance_corrected.py
 This command correctly returned exit 2: Windows acceptance was blocked on Linux.
 Skipped Windows tests are not counted as acceptance passes.
 
-Run that same command with native Windows Python and pywin32 from the exact
-pushed commit. Exit 0 is required. Do not run it through WSL Python.
+On October 2, 2026, Lee ran the suite in an isolated detached Windows worktree
+of commit `2bbcb0755ea5bbe10093a9e148250e9d7f3c1202`, using native Windows
+Python with pywin32 from the installed Hermes virtual environment. The result
+below was supplied by Lee; this review workspace did not execute Windows tests.
+
+```
+Ran 14 tests in 1.755s
+OK (skipped=1)
+Library tests complete. Hermes integration has NOT been validated by this suite.
+Acceptance exit code: 0
+```
+
+Thirteen tests passed: six approval tests and seven native Windows mutex tests.
+Only the unsupported-platform test was skipped because native mutex support was
+available. Real two-process contention, actual mutex abandonment, live-owner
+protection, recursive/wrong-thread release, callback/setup error cleanup, and
+the synchronous child execution boundary all passed. This establishes library
+acceptance for the tested commit; it does not establish installed enforcement.
 
 ## Required before operational acceptance
 
-1. Attach native Windows test output and exit code for the reviewed commit.
+1. Native Windows library acceptance is complete for commit `2bbcb07`, as
+   recorded above. Revalidate executable code if it changes.
 2. Identify Jeeves's real claim/dispatch/child-creation entry path and integrate
    the authoritative guard there; prove negative checks at that boundary with
    a harmless explicitly authorized workload.
@@ -75,7 +92,8 @@ pushed commit. Exit 0 is required. Do not run it through WSL Python.
    boundary.
 4. Hold ownership for the entire actual work lifetime. Returning a callback that
    launches a detached process/worker does not establish that guarantee.
-5. Resolve any PR conflicts against main, then obtain Lee's merge decision.
+5. Recheck PR mergeability after integration changes, then obtain Lee's merge
+   decision. GitHub currently reports this PR mergeable.
 
 No installed Hermes hook has been changed by this repository correction.
 The existing mutex name serializes participating callers in the same Windows
