@@ -1,4 +1,4 @@
-# Execution guard correction: Windows library tests passed; Hermes integration pending
+# Execution guard correction: Windows library passed; live Jeeves acceptance pending
 
 PR: https://github.com/nvrenuf/landmarksignal-operations/pull/20
 
@@ -117,10 +117,10 @@ part of this correction.
 
 Lee's read-only inspection identified Hermes revision
 `b1968795b2569d2f7a2fc541328399c952679c25` and profile
-`%LOCALAPPDATA%\hermes\profiles\jeeves\config.yaml`. The raw profile has no
+`%LOCALAPPDATA%\hermes\profiles\jeeves\config.yaml`. The initial raw profile had no
 explicit Kanban concurrency/dispatch, delegation, agent-turn or approvals
-sections. Absence alone does not prove the runtime's merged defaults are unsafe;
-it means the requested conservative limits have not been explicitly configured.
+sections. Lee has now applied the reviewed limits and verified their effective
+values through the installed Hermes loader.
 
 The local untracked `kanban-control.py` and `kanban-guard.bat` do not invoke the
 authoritative guard. Their origin check is a placeholder; task counting can
@@ -144,11 +144,60 @@ config bytes remain intact; conflicts stop the update; the original is backed
 up. Applying also checks the installed Hermes config loader's effective values.
 
 Five configuration preservation/failure tests passed in the review workspace.
-The helper has not yet been applied on Lee's Windows laptop. Loading the new
-file does not demonstrate that an already-running gateway has reloaded it.
+On October 2, Lee applied the helper successfully on Windows. The exact original
+SHA256 was `f0d6f636a970ac5437a0114c6cbdb7bcf12c78c0bbab93075b9972e58a8183da`;
+backup: `config.pre-v1-20261002T225452Z-1bb9f0cc.yaml` in the Jeeves profile.
+The installed loader confirmed every configured limit and preservation of the
+model/session/terminal/memory settings. Loading the new file does not demonstrate
+that an already-running gateway has reloaded it.
 
 These limits do not authenticate child approval or integrate the mutex into
 live Hermes. Operational acceptance still requires the guarded entry path,
 exact issue/card binding, a controlled child-approval boundary and the harmless
 live test. No issue/card, authorization, model, infrastructure or dispatcher has
 been modified or launched during this preparation.
+
+## Prepared foreground integration; not yet accepted on Windows
+
+`install_jeeves_policy.py` installs the reviewed native pre-tool hook only in
+the existing Jeeves profile, preserving other plugin files and backing up the
+config. It also explicitly sets `kanban.review_dispatch: false`; this Hermes
+revision otherwise defaults to automatic review dispatch. The hook blocks
+unowned execution, shell, task mutation and delegation. Planning reads remain
+available. Existing Hermes sessions require a runtime restart to load it.
+
+`guarded_jeeves_acceptance.py` is a manual foreground entry for open Issue #19.
+It starts a fresh native Jeeves agent, uses the existing laptop model at
+loopback port 18434, exposes no tools, and holds the authoritative Windows mutex
+through the actual parent and child agent lifetimes and cleanup. The console
+requires separate exact human approval phrases before parent work and before
+child execution. Unapproved and wrong-issue child callbacks must be denied.
+Real competing processes must fail to acquire ownership before and after the
+actual model calls. The existing library suite separately established contention
+during a held callback.
+
+The entry binds a new named-board test card to the complete reviewed Issue #19
+URL and claims that exact card. Existing cards are compared field-for-field;
+the stale Issue #1 card is preserved. Successful work produces evidence and
+uses the native review handoff, never completion. Failure stops, preserves
+diagnostics and blocks its own card when ownership is established. Only an
+explicit human retry can resume this runner's exact blocked acceptance card.
+
+The reviewed `kanban-control.py` and `kanban-guard.bat` accept only this manual
+acceptance route and return failure for legacy claim/dispatch/token routes.
+Lee's dirty original checkout and its untracked old launchers remain untouched.
+
+Compilation and six portable policy tests passed in the review workspace;
+two additional native ownership tests were skipped on Linux and must run on
+Windows. Neither installation nor live model acceptance has yet been verified
+on Lee's Windows laptop. The new hook denies ordinary product execution until
+a separately reviewed guarded work route exists. This foreground trial does
+not establish native detached dispatcher/delegate-tool supervision, Spark
+workers, cross-session enforcement or resistance to another program running
+as the same Windows user. The child here is a real second synchronous native
+Jeeves agent, not a deployed worker bot.
+
+After the live Windows run, return the evidence to this PR for human review.
+Do not claim Issue #19's GitHub-evidence criterion until that evidence is
+actually published. No merge, branch deletion or auto-completion is authorized.
+
