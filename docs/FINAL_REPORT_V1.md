@@ -112,3 +112,43 @@ change project issues, authorization, priority, order or sprint assignments.
 
 No model changes, Spark changes, bot deployment, merge or branch deletion are
 part of this correction.
+
+## Installed Jeeves inspection and configuration preparation
+
+Lee's read-only inspection identified Hermes revision
+`b1968795b2569d2f7a2fc541328399c952679c25` and profile
+`%LOCALAPPDATA%\hermes\profiles\jeeves\config.yaml`. The raw profile has no
+explicit Kanban concurrency/dispatch, delegation, agent-turn or approvals
+sections. Absence alone does not prove the runtime's merged defaults are unsafe;
+it means the requested conservative limits have not been explicitly configured.
+
+The local untracked `kanban-control.py` and `kanban-guard.bat` do not invoke the
+authoritative guard. Their origin check is a placeholder; task counting can
+fail open; the controller omits the exact task ID required by this Hermes
+revision; the batch script accepts any nonempty token and can return success
+after command failure. A dispatch-only mutex wrapper would also be insufficient:
+Hermes dispatch starts detached workers whose lifetime exceeds the command.
+
+The named LandmarkSignal board contains one ready card:
+`t_b4bb78ed`, titled Issue #1, unassigned and without a full GitHub issue URL.
+GitHub Issue #1 is closed. Preserve the record and do not dispatch this stale
+card. The other inspected card is an archived test child. No correctly bound
+Issue #19 card was found. GitHub Issue #19 is open and explicitly permits only
+harmless safety testing, including no Spark access or deployment.
+
+`configure_jeeves_v1.py` prepares a reversible profile update for this installed
+Hermes revision. It appends explicit dispatch-off and concurrency-one settings,
+one child at most with spawn depth one and a 300-second child limit, 20 agent
+turns, manual approval mode and denial of unattended/cron approval. Existing
+config bytes remain intact; conflicts stop the update; the original is backed
+up. Applying also checks the installed Hermes config loader's effective values.
+
+Five configuration preservation/failure tests passed in the review workspace.
+The helper has not yet been applied on Lee's Windows laptop. Loading the new
+file does not demonstrate that an already-running gateway has reloaded it.
+
+These limits do not authenticate child approval or integrate the mutex into
+live Hermes. Operational acceptance still requires the guarded entry path,
+exact issue/card binding, a controlled child-approval boundary and the harmless
+live test. No issue/card, authorization, model, infrastructure or dispatcher has
+been modified or launched during this preparation.
