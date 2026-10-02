@@ -1,3 +1,6 @@
+> Historical report — superseded by [FINAL_REPORT_V1.md](FINAL_REPORT_V1.md).
+> Its test counts, readiness claims and execution instructions are not current evidence.
+
 # GitHub-to-Hermes Handoff Implementation
 
 ## Target Workflow
@@ -88,3 +91,4 @@ Target: Document Hermes and DGX baseline
 3. Create branch and PR
 4. Update GitHub issue with evidence
 5. Transition to Human Review
+

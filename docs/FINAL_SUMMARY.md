@@ -1,3 +1,6 @@
+> Historical report — superseded by [FINAL_REPORT_V1.md](FINAL_REPORT_V1.md).
+> Its test counts, readiness claims and execution instructions are not current evidence.
+
 # LandmarkSignal Execution System - Final Implementation
 
 **Date**: 2026-10-01  
@@ -110,3 +113,4 @@
 ---
 
 **END OF REPORT**
+

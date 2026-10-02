@@ -1,423 +1,293 @@
-#!/usr/bin/env python3
-"""
-LANDMARKSIGNAL EXECUTION GUARD - CORRECTED ACCEPTANCE TESTS
+"""Isolated tests. Exit 2 means Windows acceptance was not run.
 
-Real tests with:
-- Proper subprocess synchronization
-- Bounded waits
-- Actual assertions
-- Nonzero exit codes on failure
+No test touches the live Kanban directory or the production mutex.
+Passing this suite validates the library, not installation into Hermes.
 """
-
-import os
-import sys
 import json
-import time
-import subprocess
+import multiprocessing as mp
+import os
+from pathlib import Path
+import sys
+import tempfile
+import threading
+import unittest
+import uuid
 
-# Add current directory to path (for module import)
-script_dir = os.path.dirname(os.path.abspath(__file__))
-if script_dir not in sys.path:
-    sys.path.insert(0, script_dir)
-
-# Now import
+import execution_guard_v1_final as module
 from execution_guard_v1_final import (
-    ExecutionGuard,
-    ChildAuth,
-    MutexUnavailableError,
-    LockHeldError,
-    UnauthorizedError,
-    GUARD_MUTEX_NAME,
-    GUARD_LOCK_FILE,
-    GUARD_STATE_DIR,
+    ChildAuth, ExecutionGuard, ExecutionGuardError, LockHeldError,
+    MutexUnavailableError, UnauthorizedError,
 )
 
 
-def test_1_lock_held_throughout_execution():
-    """Test 1: Lock held throughout execution."""
-    print("\n[Test 1] Lock held throughout execution")
+def worker(connection, directory, name, role):
+    """Real subprocess using the production guard implementation."""
     try:
-        guard = ExecutionGuard("TEST-001", "t1")
-        guard.acquire()
-        time.sleep(0.1)
-        if not guard._acquired:
-            print("[FAIL] Lock released during execution")
-            return 1
+        if role == "owner":
+            guard = ExecutionGuard("19", "owner", state_dir=directory, mutex_name=name, timeout=1)
+            def task():
+                connection.send(("owned", os.getpid()))
+                if not connection.poll(20) or connection.recv() != "release":
+                    raise RuntimeError("Owner release signal timed out")
+            guard.execute(task)
+            connection.send(("released", True))
         else:
-            print("[PASS] Lock held during execution")
-        guard.release()
-    except Exception as e:
-        print(f"[FAIL] {e}")
-        return 1
-    return 0
-
-
-def test_2_concurrent_execution_blocked():
-    """
-    Test 2: Concurrent execution blocked.
-    
-    Two processes: Worker A holds lock for 2 seconds, Worker B tries to acquire.
-    Worker B should WAIT until Worker A releases.
-    """
-    print("\n[Test 2] Concurrent execution blocked")
-    
-    # Create test directory
-    test_state_dir = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4"
-    os.makedirs(test_state_dir, exist_ok=True)
-    
-    lock_file = os.path.join(test_state_dir, "concurrent.lock")
-    state_file = os.path.join(test_state_dir, "state.json")
-    
-    # Write Worker A script
-    worker_a_content = '''
-import sys
-import os
-import json
-import time
-
-test_state_dir = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4"
-lock_file = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4/concurrent.lock"
-state_file = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4/state.json"
-
-print("[Worker A] Acquiring lock...", flush=True)
-
-with open(lock_file, "w") as f:
-    json.dump({"worker": "acquired", "time": time.time()}, f)
-
-print("[Worker A] Lock acquired", flush=True)
-time.sleep(2)
-print("[Worker A] Lock released, writing state", flush=True)
-
-with open(state_file, "w") as f:
-    json.dump({"worker": "released", "time": time.time()}, f)
-print("[Worker A] Done", flush=True)
-'''
-    
-    # Write Worker B script
-    worker_b_content = '''
-import sys
-import os
-import json
-import time
-
-test_state_dir = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4"
-lock_file = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4/concurrent.lock"
-state_file = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_concurrent4/state.json"
-
-print("[Worker B] Waiting for lock...", flush=True)
-
-while True:
-    if os.path.exists(state_file):
-        try:
-            with open(state_file) as f:
-                state = json.load(f)
-            if state.get("worker") == "released":
-                print("[Worker B] Lock released, acquiring...", flush=True)
-                break
-        except:
-            pass
-    time.sleep(0.1)
-
-print("[Worker B] Acquired lock", flush=True)
-time.sleep(1)
-print("[Worker B] Released lock", flush=True)
-print("[Worker B] Done", flush=True)
-'''
-    
-    # Write scripts to temp files
-    worker_a_path = os.path.join(script_dir, "worker_a_test.py")
-    worker_b_path = os.path.join(script_dir, "worker_b_test.py")
-    
-    with open(worker_a_path, "w") as f:
-        f.write(worker_a_content)
-    
-    with open(worker_b_path, "w") as f:
-        f.write(worker_b_content)
-    
-    try:
-        # Run Worker A
-        print("  [TEST] Running Worker A...")
-        proc_a = subprocess.Popen(
-            [sys.executable, worker_a_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True
-        )
-        stdout_a, _ = proc_a.communicate(timeout=10)
-        
-        if proc_a.returncode != 0:
-            print("[FAIL] Worker A failed with exit code " + str(proc_a.returncode))
-            print(stdout_a)
-            return 1
-        else:
-            print(stdout_a)
-            print("  [PASS] Worker A completed")
-    
-    except subprocess.TimeoutExpired:
-        print("[FAIL] Worker A timed out")
-        proc_a.terminate()
-        proc_a.wait()
-        return 1
-    
-    # Run Worker B
-    try:
-        print("  [TEST] Running Worker B...")
-        proc_b = subprocess.Popen(
-            [sys.executable, worker_b_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True
-        )
-        stdout_b, _ = proc_b.communicate(timeout=15)
-        
-        if proc_b.returncode != 0:
-            print("[FAIL] Worker B failed with exit code " + str(proc_b.returncode))
-            print(stdout_b)
-            return 1
-        else:
-            print(stdout_b)
-            print("  [PASS] Worker B acquired lock after Worker A released")
-            return 0
-    except subprocess.TimeoutExpired:
-        print("[FAIL] Worker B timed out")
-        proc_b.terminate()
-        proc_b.wait()
-        return 1
-
-
-def test_3_crash_recovery():
-    """
-    Test 3: Crash recovery.
-    
-    Terminate a process while it owns the mutex. Keep a contender's handle alive
-    and prove abandoned ownership is recovered correctly.
-    Also verify that cleanup cannot displace a live task.
-    """
-    print("\n[Test 3] Crash recovery")
-    
-    test_state_dir = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_crash3"
-    os.makedirs(test_state_dir, exist_ok=True)
-    
-    lock_file = os.path.join(test_state_dir, "crash.lock")
-    state_file = os.path.join(test_state_dir, "state.json")
-    
-    # Phase 1: Acquire lock and hold it
-    print("  [TEST] Phase 1: Acquiring lock and holding it...")
-    
-    acquire_script = '''
-import sys
-import os
-import json
-import time
-
-test_state_dir = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_crash3"
-lock_file = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_crash3/crash.lock"
-state_file = r"C:/Users/lee/AppData/Local/hermes/kanban/state/test_crash3/state.json"
-
-with open(lock_file, "w") as f:
-    json.dump({"worker": "acquired", "time": time.time()}, f)
-
-print("[CrashWorker] Lock acquired", flush=True)
-'''
-    
-    proc = subprocess.Popen(
-        [sys.executable, "-c", acquire_script],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True
-    )
-    
-    stdout, _ = proc.communicate(timeout=5)
-    print("  ", stdout)
-    
-    # Phase 2: Create stale lock file to simulate crash
-    print("  [TEST] Phase 2: Simulating crash with stale lock...")
-    if os.path.exists(lock_file):
-        os.remove(lock_file)
-    
-    stale_lock = {
-        "type": "SHARED",
-        "github_issue_id": "CRASH-001",
-        "task_id": "t_crash",
-        "acquired_at": time.time() - 3600,
-        "expiry": int(time.time()) - 3600
-    }
-    
-    with open(lock_file, "w") as f:
-        json.dump(stale_lock, f)
-    
-    print("  Created stale lock with expiry:", stale_lock['expiry'])
-    
-    # Phase 3: Contender should recover stale lock
-    print("  [TEST] Phase 3: Contender recovering stale lock...")
-    
-    try:
-        guard = ExecutionGuard("TEST-003", "t3")
-        guard.acquire()
-        print("  [PASS] Stale lock recovered - new task acquired lock")
-        guard.release()
-        return 0
-    except Exception as e:
-        print("  [FAIL] Error:", e)
-        return 1
-
-
-def test_4_non_owner_cannot_release():
-    """Test 4: Non-owner cannot release lock."""
-    print("\n[Test 4] Non-owner cannot release")
-    
-    try:
-        guard = ExecutionGuard("TEST-004", "t4")
-        result = guard.release()
-        
-        if result:
-            print("[FAIL] Non-owner was able to release lock")
-            return 1
-        else:
-            print("[PASS] Non-owner correctly denied release")
-        return 0
-    except Exception as e:
-        print(f"[FAIL] Unexpected error: {e}")
-        return 1
-
-
-def test_5_child_unauthorized_blocked():
-    """Test 5: Unauthorized child blocked."""
-    print("\n[Test 5] Unauthorized child blocked")
-    
-    try:
-        auth = ChildAuth()
-        auth.propose("unauthorized", "TEST-005")
-        
-        try:
-            auth.verify("unauthorized", "TEST-005")
-            print("[FAIL] Unauthorized child was allowed")
-            return 1
-        except UnauthorizedError:
-            print("[PASS] Unauthorized child correctly blocked")
-        
-        return 0
-    except Exception as e:
-        print(f"[FAIL] Unexpected error: {e}")
-        return 1
-
-
-def test_6_child_approved_executes():
-    """Test 6: Approved child executes."""
-    print("\n[Test 6] Approved child executes")
-    
-    try:
-        auth = ChildAuth()
-        auth.propose("approved", "TEST-006")
-        auth.approve("approved", "TEST-006")
-        auth.verify("approved", "TEST-006")
-        print("[PASS] Approved child correctly allowed")
-        
-        return 0
-    except Exception as e:
-        print(f"[FAIL] {e}")
-        return 1
-
-
-def test_7_issue_id_mismatch_blocked():
-    """Test 7: Issue ID mismatch blocked."""
-    print("\n[Test 7] Issue ID mismatch blocked")
-    
-    try:
-        auth = ChildAuth()
-        auth.propose("mismatch", "TEST-007-A")
-        auth.approve("mismatch", "TEST-007-A")
-        
-        try:
-            auth.verify("mismatch", "TEST-007-B")
-            print("[FAIL] Issue ID mismatch was allowed")
-            return 1
-        except UnauthorizedError as e:
-            if "Issue ID mismatch" in str(e):
-                print("[PASS] Issue ID mismatch correctly blocked")
+            blocked = ExecutionGuard("19", "contender", state_dir=directory, mutex_name=name, timeout=0.15)
+            try:
+                blocked.execute(lambda: connection.send(("ILLEGAL_EXECUTION", True)))
+            except LockHeldError:
+                connection.send(("blocked", True))
             else:
-                print(f"[FAIL] Wrong error: {e}")
-                return 1
-        
-        return 0
-    except Exception as e:
-        print(f"[FAIL] Unexpected error: {e}")
-        return 1
+                raise AssertionError("Contender executed while owner held lock")
+            if not connection.poll(20) or connection.recv() != "retry":
+                raise RuntimeError("Contender retry signal timed out")
+            guard = ExecutionGuard("19", "contender", state_dir=directory, mutex_name=name, timeout=2)
+            guard.execute(lambda: connection.send(("executed", guard.abandoned)))
+            connection.send(("released", True))
+    except BaseException as error:
+        connection.send(("error", repr(error)))
+        raise
+    finally:
+        connection.close()
 
 
-def test_8_executive_entry_point():
-    """
-    Test 8: Executive entry point test.
-    
-    Demonstrates that Jeeves's operational entry point invokes the guard
-    and issue-bound approval checks.
-    """
-    print("\n[Test 8] Executive entry point")
-    
-    try:
-        guard = ExecutionGuard("TEST-008", "exec_entry")
-        auth = ChildAuth()
-        
-        auth.propose("exec_child_001", "TEST-008")
-        auth.approve("exec_child_001", "TEST-008")
-        
-        def executive_task():
-            print("  [EXEC] Starting task...", flush=True)
-            time.sleep(0.5)
-            print("  [EXEC] Verifying child authorization...", flush=True)
-            auth.verify("exec_child_001", "TEST-008")
-            print("  [EXEC] Child authorized, proceeding...", flush=True)
-            print("  [EXEC] Task completed", flush=True)
-            return "success"
-        
-        result = guard.execute(executive_task)
-        
-        if result == "success":
-            print("[PASS] Executive entry point works with approval checks")
-            return 0
-        else:
-            print(f"[FAIL] Unexpected result: {result}")
-            return 1
-    except LockHeldError as e:
-        print(f"[FAIL] Lock error: {e}")
-        return 1
-    except Exception as e:
-        print(f"[FAIL] Unexpected error: {e}")
-        return 1
+class ApprovalTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.auth = ChildAuth(state_dir=self.temporary.name)
+
+    def test_unapproved_and_missing_records_are_denied(self):
+        with self.assertRaises(UnauthorizedError):
+            self.auth.verify("missing", "19")
+        self.auth.propose("child", "19")
+        with self.assertRaises(UnauthorizedError):
+            self.auth.verify("child", "19")
+
+    def test_issue_binding_and_approved_record(self):
+        self.auth.propose("child", "19")
+        with self.assertRaises(UnauthorizedError):
+            self.auth.approve("child", "20")
+        self.auth.approve("child", "19")
+        self.assertTrue(self.auth.verify("child", "19"))
+        with self.assertRaises(UnauthorizedError):
+            self.auth.verify("child", "20")
+
+    def test_malformed_wrong_child_and_nonboolean_approval_are_denied(self):
+        self.auth.propose("child", "19")
+        path = self.auth._path("child")
+        for data in ([], {"child_id": "other"}, {
+            "child_id": "child", "github_issue_id": "19",
+            "status": "approved", "approved": "true",
+        }):
+            path.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaises(UnauthorizedError):
+                self.auth.verify("child", "19")
+        path.write_text("{broken", encoding="utf-8")
+        with self.assertRaises(UnauthorizedError):
+            self.auth.verify("child", "19")
+
+    def test_proposal_does_not_overwrite_approval(self):
+        self.auth.propose("child", "19")
+        self.auth.approve("child", "19")
+        with self.assertRaises(FileExistsError):
+            self.auth.propose("child", "20")
+        self.assertTrue(self.auth.verify("child", "19"))
+
+    def test_path_traversal_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self.auth.propose("../escape", "19")
+
+    def test_child_cannot_execute_without_owned_scope(self):
+        self.auth.propose("child", "19")
+        self.auth.approve("child", "19")
+        markers = []
+        with self.assertRaises(UnauthorizedError):
+            self.auth.execute("child", "19", lambda: markers.append("ran"),
+                              guard=ExecutionGuard("19", "parent"))
+        self.assertEqual(markers, [])
 
 
-def main():
-    """Run all tests with proper exit codes."""
-    print("=" * 70)
-    print("EXECUTION GUARD V1 - CORRECTED ACCEPTANCE TESTS")
-    print("=" * 70)
-    
-    all_passed = True
-    tests = [
-        ("Lock held throughout execution", test_1_lock_held_throughout_execution),
-        ("Concurrent execution blocked", test_2_concurrent_execution_blocked),
-        ("Crash recovery", test_3_crash_recovery),
-        ("Non-owner cannot release", test_4_non_owner_cannot_release),
-        ("Unauthorized child blocked", test_5_child_unauthorized_blocked),
-        ("Approved child executes", test_6_child_approved_executes),
-        ("Issue ID mismatch blocked", test_7_issue_id_mismatch_blocked),
-        ("Executive entry point", test_8_executive_entry_point),
-    ]
-    
-    for name, test_func in tests:
-        exit_code = test_func()
-        if exit_code != 0:
-            all_passed = False
-            print(f"[FAIL] {name}")
-    
-    print("\n" + "=" * 70)
-    if all_passed:
-        print("ALL TESTS PASSED")
-        return 0
-    else:
-        print("SOME TESTS FAILED")
-        return 1
+class PlatformTests(unittest.TestCase):
+    @unittest.skipIf(module.HAS_WIN32EVENT, "Native Windows mutex is available")
+    def test_unsupported_platform_fails_before_callback(self):
+        markers = []
+        with self.assertRaises(MutexUnavailableError):
+            ExecutionGuard("19", "task").execute(lambda: markers.append("ran"))
+        self.assertEqual(markers, [])
+
+
+@unittest.skipUnless(module.HAS_WIN32EVENT, "Requires native Windows and pywin32")
+class WindowsMutexTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.directory = self.temporary.name
+        self.name = "LandmarkSignalV1Acceptance_" + uuid.uuid4().hex
+        self.children = []
+        self.addCleanup(self.cleanup)
+
+    def cleanup(self):
+        for process, connection in self.children:
+            if process.is_alive():
+                process.terminate()
+            process.join(3)
+            if process.is_alive():
+                process.kill()
+                process.join(3)
+            connection.close()
+            process.close()
+        self.temporary.cleanup()
+
+    def guard(self, task="parent", **kwargs):
+        return ExecutionGuard("19", task, state_dir=self.directory,
+                              mutex_name=self.name, timeout=0.2, **kwargs)
+
+    def start(self, role):
+        context = mp.get_context("spawn")
+        parent, child = context.Pipe()
+        process = context.Process(target=worker, args=(child, self.directory, self.name, role))
+        process.start()
+        child.close()
+        self.children.append((process, parent))
+        return process, parent
+
+    def expect(self, connection, label):
+        self.assertTrue(connection.poll(10), "Timed out waiting for " + label)
+        result = connection.recv()
+        self.assertEqual(result[0], label, repr(result))
+        return result[1]
+
+    def completed(self, process):
+        process.join(5)
+        self.assertFalse(process.is_alive(), "Worker did not exit")
+        self.assertEqual(process.exitcode, 0)
+
+    def test_two_processes_block_during_execute_then_proceed(self):
+        owner, first = self.start("owner")
+        self.expect(first, "owned")
+        before = Path(self.directory, "current.lock").read_bytes()
+        contender, second = self.start("contender")
+        self.expect(second, "blocked")
+        self.assertTrue(owner.is_alive())
+        self.assertEqual(Path(self.directory, "current.lock").read_bytes(), before)
+        first.send("release")
+        self.expect(first, "released")
+        self.completed(owner)
+        second.send("retry")
+        self.assertFalse(self.expect(second, "executed"))
+        self.expect(second, "released")
+        self.completed(contender)
+
+    def test_crashed_owner_recovers_actual_abandoned_mutex(self):
+        owner, first = self.start("owner")
+        self.expect(first, "owned")
+        # Preserve kernel object identity across owner death.
+        keeper = module.win32event.CreateMutex(None, False, self.name)
+        try:
+            contender, second = self.start("contender")
+            self.expect(second, "blocked")
+            owner.terminate()
+            owner.join(5)
+            self.assertFalse(owner.is_alive())
+            self.assertNotEqual(owner.exitcode, 0)
+            self.assertTrue(Path(self.directory, "current.lock").exists())
+            second.send("retry")
+            self.assertTrue(self.expect(second, "executed"), "Expected WAIT_ABANDONED ownership")
+            self.expect(second, "released")
+            self.completed(contender)
+            self.assertFalse(Path(self.directory, "current.lock").exists())
+        finally:
+            keeper.Close()
+
+    def test_expired_metadata_cannot_displace_live_owner(self):
+        owner, first = self.start("owner")
+        self.expect(first, "owned")
+        path = Path(self.directory, "current.lock")
+        data = json.loads(path.read_text())
+        data["expiry"] = 0
+        path.write_text(json.dumps(data))
+        contender, second = self.start("contender")
+        self.expect(second, "blocked")
+        self.assertTrue(owner.is_alive())
+        self.assertEqual(json.loads(path.read_text())["token"], data["token"])
+        first.send("release")
+        self.expect(first, "released")
+        self.completed(owner)
+        second.send("retry")
+        self.expect(second, "executed")
+        self.expect(second, "released")
+        self.completed(contender)
+
+    def test_recursion_and_wrong_thread_release_preserve_owner(self):
+        guard = self.guard()
+        guard.acquire()
+        try:
+            with self.assertRaises(LockHeldError):
+                guard.acquire()
+            with self.assertRaises(LockHeldError):
+                self.guard("nested").acquire()
+            results = []
+            thread = threading.Thread(target=lambda: results.append(guard.release()))
+            thread.start()
+            thread.join(2)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(results, [False])
+            self.assertTrue(guard._acquired)
+            self.assertTrue(Path(self.directory, "current.lock").exists())
+            contender, second = self.start("contender")
+            self.expect(second, "blocked")
+        finally:
+            self.assertTrue(guard.release())
+        second.send("retry")
+        self.expect(second, "executed")
+        self.expect(second, "released")
+        self.completed(contender)
+
+    def test_callback_exception_releases_ownership(self):
+        def failure():
+            raise RuntimeError("deliberate callback failure")
+        with self.assertRaisesRegex(RuntimeError, "deliberate"):
+            self.guard().execute(failure)
+        self.assertEqual(self.guard("next").execute(lambda: "ran"), "ran")
+
+    def test_metadata_setup_failure_releases_ownership(self):
+        blocker = Path(self.directory, "not-a-directory")
+        blocker.write_text("blocker")
+        bad = ExecutionGuard("19", "bad", state_dir=blocker, mutex_name=self.name, timeout=0.2)
+        with self.assertRaises(ExecutionGuardError):
+            bad.acquire()
+        self.assertEqual(self.guard("next").execute(lambda: "ran"), "ran")
+
+    def test_child_execution_boundary_checks_before_callback(self):
+        auth = ChildAuth(state_dir=self.directory)
+        auth.propose("child", "19")
+        auth.propose("wrong-issue", "20")
+        auth.approve("wrong-issue", "20")
+        parent = self.guard()
+        markers = []
+        def parent_task():
+            for child in ("child", "wrong-issue", "missing"):
+                with self.assertRaises(UnauthorizedError):
+                    auth.execute(child, "19", lambda: markers.append("forbidden"), guard=parent)
+            self.assertEqual(markers, [])
+            # Test fixture approval only; not evidence of a real human gate.
+            auth.approve("child", "19")
+            self.assertEqual(auth.execute("child", "19", lambda: markers.append("approved") or "ok",
+                                         guard=parent), "ok")
+        parent.execute(parent_task)
+        self.assertEqual(markers, ["approved"])
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    portable = "--portable" in sys.argv
+    classes = [ApprovalTests, PlatformTests]
+    if not portable:
+        classes.append(WindowsMutexTests)
+    suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls) for cls in classes)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if not result.wasSuccessful():
+        sys.exit(1)
+    if not portable and not module.HAS_WIN32EVENT:
+        print("BLOCKED: Windows acceptance was not run. Native Windows and pywin32 required.")
+        sys.exit(2)
+    print("Library tests complete. Hermes integration has NOT been validated by this suite.")

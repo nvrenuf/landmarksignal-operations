@@ -1,3 +1,6 @@
+> Historical report — superseded by [FINAL_REPORT_V1.md](FINAL_REPORT_V1.md).
+> Its test counts, readiness claims and execution instructions are not current evidence.
+
 # LandmarkSignal Execution System - Final Evidence Report
 
 **Date**: 2026-10-01  
@@ -375,3 +378,4 @@ The LandmarkSignal Execution System Phase 1 (Execution Safety Guard) is **FUNCTI
 ---
 
 **END OF REPORT**
+

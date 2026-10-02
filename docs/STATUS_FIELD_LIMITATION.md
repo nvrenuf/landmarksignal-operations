@@ -1,31 +1,21 @@
-# Status Field Configuration Status
+# Project #3 Status field: configuration complete
 
-## Current State
-The GitHub Project #3 Status field has the following options:
-- Todo
-- In Progress  
-- Done
+https://github.com/users/nvrenuf/projects/3
 
-## Limitation
-The GitHub CLI (`gh`) does not support updating single-select field options via command line.
-This requires manual update via GitHub UI.
+The existing field was updated and verified in this order:
 
-## Workaround
-For this assignment, we will use "Todo" as a proxy for "Defined" status.
-Issue #1 (our test issue) will be moved to "In Progress" to represent "Queued for Jeeves".
+1. Idea
+2. Defined
+3. Sprint Ready
+4. Queued for Jeeves
+5. In Progress
+6. Validation
+7. Human Review
+8. Blocked
+9. Done
 
-## Recommended Action
-Update Status field options via GitHub UI:
-1. Go to GitHub Project #3
-2. Click "Configure" → "Status"
-3. Add options: Idea, Defined, Sprint Ready, Queued for Jeeves, Validation, Human Review, Blocked
-4. Rename "Todo" to "Defined" (if desired)
-5. Keep "In Progress" and "Done"
+Todo was renamed in place to Defined. The original 17 issues and their Priority
+and Execution Order values were preserved. No duplicate Status field was created.
 
-## Next Steps
-Proceed with Phase Three using current Status values with the following mapping:
-- Todo → Defined
-- In Progress → Queued for Jeeves / In Progress
-- Done → Human Review / Done
-
-This mapping is documented and will be updated when the field options are manually corrected.
+No further field edit is required. Earlier reports requesting a manual update
+are superseded. See FINAL_REPORT_V1.md for the guard's current validation status.

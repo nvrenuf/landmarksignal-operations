@@ -1,3 +1,6 @@
+> Historical report — superseded by [FINAL_REPORT_V1.md](FINAL_REPORT_V1.md).
+> Its test counts, readiness claims and execution instructions are not current evidence.
+
 # Implementation Complete - Issue #14: Execution Safety Guard
 
 **PR Link**: https://github.com/nvrenuf/landmarksignal-operations/pull/20  
@@ -50,3 +53,4 @@ All tests passed with real assertions and failing exit codes.
 ---
 
 **Status**: READY FOR HUMAN REVIEW
+

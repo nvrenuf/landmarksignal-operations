@@ -1,3 +1,6 @@
+> Historical report — superseded by [FINAL_REPORT_V1.md](FINAL_REPORT_V1.md).
+> Its test counts, readiness claims and execution instructions are not current evidence.
+
 # LandmarkSignal Execution System - Evidence Report
 
 **Date**: 2026-10-01  
@@ -353,3 +356,4 @@ python execution-guard.py --action test
 ---
 
 **END OF REPORT**
+
