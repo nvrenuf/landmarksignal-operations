@@ -1,6 +1,23 @@
-# Execution guard correction: Windows library passed; live Jeeves acceptance pending
+# Execution guard: live foreground acceptance passed; human review pending
 
 PR: https://github.com/nvrenuf/landmarksignal-operations/pull/20
+
+## Current evidence — October 7, 2026
+
+Lee's native Windows run at executable commit `4ba547506b29d0b64720a6825b855965a4745675` returned acceptance exit 0 at 13:53 MDT. Four recovery tests passed. The installed native policy recognized manual holds; actual Jeeves local-model parent and separately approved child calls passed; unapproved and wrong-issue children were denied before callbacks; a real contender was blocked throughout the owned scope checks; original cards were preserved and card `t_a43efea7` reached native review.
+
+Evidence remains on Lee's laptop:
+`C:\Users\lee\AppData\Local\hermes\landmarksignal-v1\acceptance\fcb34647cb854abb9ca7726c88122455\evidence.json`.
+
+The console result is recorded in GitHub issues #19 and #22. The saved JSON has not yet been independently inspected or published. Issue #19 remains open; PR #20 remains unmerged. No Project authorization, Priority, Execution Order or Sprint fields were changed by the acceptance.
+
+The scoped source review found no merge-blocking defect in the tested foreground guard/acceptance route. Review-workspace regression checks: 20 tests run, 18 passed, two native Windows ownership tests skipped on Linux. Those two checks previously passed in Lee's 13-test native policy/configuration run. Native library evidence remains 13 passed and one unsupported-platform skip; the canonical guard is unchanged since that native library run. There are no GitHub CI check runs or status contexts on the reviewed executable head.
+
+This is synchronous foreground acceptance, not approval for ordinary product execution. Detached worker supervision, a full GitHub-to-worker handoff, old-session policy activation, and normal startup/idle recovery remain unverified. Same-user tamper resistance and cross-session host enforcement are not established. The caller behind the earlier background decomposition/promotion remains unidentified; native manual block events now prevent routine auto-promotion of parked acceptance cards.
+
+## Historical checkpoints
+
+The following sections record earlier findings and pending states. The current evidence above supersedes their pre-acceptance status claims; they remain for traceability.
 
 ## Current status
 
