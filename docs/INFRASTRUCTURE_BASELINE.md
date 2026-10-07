@@ -1,3 +1,5 @@
+> Historical checkpoint: the observations and pending/merged claims below are dated evidence, not current launch instructions. See [current workflow](GITHUB_HERMES_WORKFLOW.md) and [execution policy](KANBAN_EXECUTION_POLICY.md). PRs #20, #23, #24 and #25 have since merged with Lee's approval; the nine-stage Status field and guarded document pilots are complete. Broader dispatcher, intake/specifier and tool-enabled worker coverage remain unverified. Preserve this report for traceability.
+
 # Infrastructure Baseline
 
 ## Verified Configuration

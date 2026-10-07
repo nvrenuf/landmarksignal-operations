@@ -1,0 +1,17 @@
+{
+  "skill": "landmarksignal-operations",
+  "inspected_old_normalized_sha256": {
+    "SKILL.md": "8ed78a103e8daeae0a66b769db6d518c3152896ab539f36594bfc50fcc648841",
+    "references/hermes-kanban.md": "39ea65f7c49daf40bea379d3886d65bc9b1c51905fa33e6f6b2d62a39bf1f9f4",
+    "references/hermes-kanban-safety.md": "b83a596227558de51b1138556062e7da06925761fb562bccada356595214bc14",
+    "references/execution-guard-v1.md": "60aa584a37cc83b6579a76f3af11f101d14a4c75c16db87ac541f25cc27f8987",
+    "references/acceptance-test.md": "c62cbb3f584c741551d7de0ab3f6ecf773b950185e723f93b9eeb99845605253"
+  },
+  "new_sha256": {
+    "SKILL.md": "a20f104e5c10ea8e2fcae947b9681dca43c016dd530e51d5b317e5ee20c95ead",
+    "references/execution-guard-v1.md": "498fb27a42a3972df501925f5e55ff55247ede44cb49c2f6bdf5494d723eb67b",
+    "references/acceptance-test.md": "d332394b268311bb6a85888cb2d650a6cc85082ee3d081a603b0fbd000a8681f",
+    "references/hermes-kanban.md": "e68ecf43d73f3752ead5af2fa2815b6fd3faf0f63fa9d2ffa1918e4b9736fbea",
+    "references/hermes-kanban-safety.md": "7a12d3ce873997c2415f24e92b8a699274f58e20e428418a4930451863854107"
+  }
+}

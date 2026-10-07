@@ -1,5 +1,7 @@
 # Manual Jeeves document handoff
 
+Follow [GitHub to Hermes workflow](GITHUB_HERMES_WORKFLOW.md) for authority, intake and approval boundaries. This procedure covers only the accepted document contracts.
+
 GitHub is the issue and priority record. The existing LandmarkSignal Hermes board records execution. Creating or preparing a card does not authorize a model call.
 
 The dashboard selector lists source-reviewed document contracts. It accepts no arbitrary prompts, commands, workspace paths, model routes or repository URLs from the browser. The first additional contract is a one-page planned roster draft under Issue #6. It does not create bots or child tasks and does not complete the whole issue.
@@ -9,7 +11,7 @@ The dashboard selector lists source-reviewed document contracts. It accepts no a
 1. Use the pinned setup checkout and run `setup_document_handoff.ps1` from Lee's ordinary PowerShell. It verifies the existing native Jeeves browser dashboard owner before changing files. Desktop-managed dashboards are refused rather than killed.
 2. Preparation backs up the existing board and launcher assets, checks reviewed installed hashes, and creates or finds the exact Issue #6 card using a stable idempotency key. The new card and native sticky blocked event are committed together. All existing cards, including the completed Issue #7 card, are preserved. Model, policy and configuration values are not changed.
 3. The script restarts only the browser dashboard to mount the expanded routes. No model call or dispatch occurs during setup.
-4. In `http://127.0.0.1:9119/kanban?profile=jeeves`, select Issue #6's planned roster draft and expand **Review exact task scope**. Type **APPROVE ISSUE 6**, then select **Approve and run**. Do not use the ordinary dispatcher.
+4. In `http://127.0.0.1:9119/jeeves-launch?profile=jeeves`, select Issue #6's planned roster draft and expand **Review exact task scope**. Type **APPROVE ISSUE 6**, then select **Approve and run**. Do not use the ordinary dispatcher.
 5. The launcher binds the card snapshot, reviewed contract, task ID, issue URL, profile and fixed workspace. It rejects wrong approvals, unreviewed selectors, competing running work and duplicate launches. The worker rechecks the card under the accepted global mutex before an exact native claim.
 6. Jeeves gets one bounded local-model document call: 1800 output tokens, one iteration, 120-second run budget, no tools or children, no fallback model. Saved reasoning/model settings are unchanged. Ownership lasts through agent close. Missing required role names or incomplete model output stops the run without publishing a successful draft.
 7. The document and evidence go to native Review. Inspect content; Lee decides acceptance. Complete only that card after acceptance. Return accepted artifacts and evidence to GitHub manually, and close a GitHub issue only when all its criteria are met.

@@ -1,91 +1,27 @@
 # LandmarkSignal Kanban Execution Policy
 
-## Purpose
-Define the execution safety and manual control policy for the LandmarkSignal Hermes Kanban board.
+## Board and ownership
 
-## Board Identity
-- **Slug:** `landmarksignal`
-- **Name:** LandmarkSignal Hermes Operations Board
-- **Database:** `C:\Users\lee\AppData\Local\hermes\kanban\boards\landmarksignal\kanban.db`
+Use the existing `landmarksignal` board at `%LOCALAPPDATA%\hermes\kanban\boards\landmarksignal\kanban.db`. Do not initialize another board or database. GitHub Project #3 remains the authoritative backlog and priority record.
 
-## Execution Safety Rules
+## Approval and lifecycle
 
-### 1. Manual Dispatch Only
-- **NO automatic gateway dispatch**
-- **NO cron jobs**
-- **NO daemon processes**
-- All task claims/dispatches require explicit human authorization
+Follow [GitHub to Hermes workflow](GITHUB_HERMES_WORKFLOW.md). Import/prepare, specification drafting, execution, child work and acceptance are distinct permissions. A GitHub field or native state never replaces exact task/scope approval.
 
-### 2. Single Active Task Limit
-- Maximum **1** task in running state at any time
-- New tasks blocked until previous task completes
-- Exception: Jeeves may override for critical path work (requires explicit approval)
+Native To-do can automatically become Ready. Native Specify uses an auxiliary model and invokes this promotion path. Native Scheduled is a time wait, not human approval. Until a guarded reusable intake/specification route exists, do not use those paths to launch new work. Existing document entries use verified sticky Blocked holds until manual release.
 
-### 3. Authorization Requirements
-All Kanban operations require:
-- **Claim:** GitHub issue ID reference + manual approval
-- **Dispatch:** Manual approval after dry-run review
-- **Swarm/Decompose:** GitHub issue approval required
+## Current enforcement
 
-### 4. Child Task Policy
-- Child tasks require explicit authorization
-- Swarm operations blocked without approval
-- Decomposition operations blocked without approval
+- Canonical implementation: `execution_guard_v1_final.py`, Windows mutex `LandmarkSignalV1Mutex`. Fail closed if native mutex support is unavailable; no weaker fallback. Hold ownership through agent close. Diagnostic timestamp expiry never displaces a live owner.
+- Installed `landmarksignal-execution` pre-tool policy blocks unowned shell, task mutation and delegation; planning reads remain available. It does not prove guard coverage for every native dashboard/API/auxiliary path.
+- Gateway dispatch and automatic review dispatch remain off. Manual orchestration disables automatic decomposition only. Do not enable unattended/cron dispatch, swarm or ordinary dispatch to implement intake.
+- Maximum one participating guarded execution; no discretionary concurrency override in the accepted implementation. Cross-session enforcement and same-user tamper resistance are not established.
+- Child creation and execution require applicable separate scoped Lee approval. The two document routes expose no tools or children.
 
-### 5. Traceability
-- Every task must reference originating GitHub issue
-- Evidence must be attached to completed tasks
-- PRs linked to GitHub issue fields
+## Approved procedure
 
-## Authorized Operations
+Use the Jeeves Launch tab for reviewed document contracts. The runner checks binding, scope snapshot, existing work and approval before exact claim. Successful output/evidence returns to Review; Lee accepts and completes the card. Failed runs remain for review with no automatic retry. Returning to Review is authorized as part of that run.
 
-| Operation | Authorization | Frequency |
-|-----------|---------------|-----------|
-| `claim` | GitHub issue ID + manual approve | Per task |
-| `dispatch` | Manual approve after dry-run | Per sprint |
-| `complete` | Manual approve | Per task |
-| `request-review` | Manual approve | Per task |
+Keep original run evidence immutable; store review corrections and human acceptance separately. Preserve unrelated cards and all GitHub Priority, Execution Order, Sprint and authorization values. A completed subtask is not approval to close its GitHub issue.
 
-## Blocked Operations
-
-| Operation | Reason |
-|-----------|--------|
-| `swarm` | Requires GitHub issue approval |
-| `decompose` | Requires GitHub issue approval |
-| `dispatch --auto` | Not allowed |
-| Cron dispatch | Not allowed |
-
-## Tools & Scripts
-
-### kanban-control.py
-Python-based execution control with:
-- Authorization checks
-- Task count enforcement
-- GitHub issue validation
-
-### kanban-guard.bat
-Windows batch guard for basic operations
-
-## Verification
-
-Before each operation:
-```bash
-# Check active task count
-hermes kanban stats --board landmarksignal
-
-# Verify GitHub issue exists
-gh issue view <ID> --repo nvrenuf/landmarksignal-operations
-
-# Review task dependencies
-hermes kanban show <TASK_ID> --board landmarksignal
-```
-
-## Audit Trail
-
-All operations logged to:
-- `kanban.db.task_events`
-- Task comments
-- GitHub issue comments
-
-## Last Updated
-2026-10-01
+Legacy `kanban-control.py`, `kanban-guard.bat`, separate acquire/release commands and older safety reports are not operating instructions. Do not use a short-lived CLI lock around a dispatcher that starts longer-lived workers.

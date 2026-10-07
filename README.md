@@ -1,3 +1,7 @@
+## Current workflow checkpoint — October 7, 2026
+
+Use [GitHub to Hermes workflow](docs/GITHUB_HERMES_WORKFLOW.md) and the reconciled operating model/execution contract. PRs #20, #23, #24 and #25 are merged; document pilots are accepted. Reusable guarded issue intake/specification and ordinary tool-enabled dispatch remain pending. The original setup summary below is historical.
+
 # LandmarkSignal Operations
 
 LandmarkSignal operating system for strategy execution, sprint planning, Hermes/Jeeves orchestration, infrastructure operations, and cross-repository coordination.
