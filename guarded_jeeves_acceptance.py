@@ -192,11 +192,16 @@ def main():
                     conn, title="Issue #19: Manual guarded execution acceptance",
                     body=ISSUE_URL + "\n\n" + source["body"], assignee=None,
                     created_by="Lee (manual console approval)", workspace_kind="dir",
-                    workspace_path=str(workspace), initial_status="ready", board="landmarksignal",
+                    workspace_path=str(workspace), initial_status="blocked", board="landmarksignal",
                     project_id="", idempotency_key=TASK_KEY, max_runtime_seconds=300, max_retries=1,
                 )
             task = None
             try:
+                # This Hermes revision accepts only running/blocked at creation.
+                # Release this exact new card after the manual approval above;
+                # never create an automatically eligible card as a side effect.
+                if not retry_task and not kb.unblock_task(conn, new_task):
+                    raise RuntimeError("Exact new blocked test card could not be released")
                 task = kb.claim_task(conn, new_task, ttl_seconds=900)
                 if task is None or task.id != new_task or ISSUE_URL not in (task.body or ""):
                     raise RuntimeError("Exact issue-bound test card was not claimed; no model call made")
