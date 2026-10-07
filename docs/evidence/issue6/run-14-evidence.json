@@ -1,0 +1,33 @@
+{
+  "issue_url": "https://github.com/nvrenuf/landmarksignal-operations/issues/6",
+  "kanban_task_id": "t_ccbe0361",
+  "profile": "jeeves",
+  "human_approval": true,
+  "execution_mode": "dashboard_guarded_no_tools_document",
+  "started_at": "2026-10-07T22:26:34.779399+00:00",
+  "task_body_sha256": "ea60afc7ef33ab9ffb01972d058981e5fd185051ce8a91ed99a73b5de8a152e9",
+  "contract_sha256": "da04cd52f129bc91fa4337115fd5a886013b346bb78b2bf2bea8c9b78966fcbb",
+  "document_contract": "issue6-roster",
+  "source_issue_body_sha256": "c641e610c88c359f0287d76a0e7b428084a76e648a94d9a06ead0c0e1f00aec8",
+  "source_updated_at": "2026-10-01T05:16:40Z",
+  "kanban_run_id": 14,
+  "model": "Qwen3.5-9B-Q4_K_M",
+  "api_calls": 1,
+  "tools_exposed": 0,
+  "generation_limits": {
+    "max_tokens": 1800,
+    "max_iterations": 1,
+    "reasoning_effort": "none"
+  },
+  "model_completed": true,
+  "response_characters": 3217,
+  "missing_required_markers": [],
+  "model_response_path": "C:\\Users\\lee\\AppData\\Local\\hermes\\landmarksignal-v1\\work\\issue6-roster\\model-response.txt",
+  "status": "AWAITING_HUMAN_REVIEW",
+  "original_cards_preserved": true,
+  "document": "C:\\Users\\lee\\AppData\\Local\\hermes\\landmarksignal-v1\\work\\issue6-roster\\BOT_ROSTER_DRAFT.md",
+  "document_sha256": "15e0bdac81bc68366a28ca96d17a51c814b3b20d333504f06fc2b50b64b87c51",
+  "scope_held_through_agent_close": true,
+  "completed_at": "2026-10-07T22:26:50.459923+00:00",
+  "kanban_status": "review"
+}

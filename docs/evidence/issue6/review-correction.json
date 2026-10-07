@@ -1,0 +1,14 @@
+﻿{
+    "issue_url":  "https://github.com/nvrenuf/landmarksignal-operations/issues/6",
+    "corrected_at":  "2026-10-07T22:33:50.9272824Z",
+    "original_sha256":  "15E0BDAC81BC68366A28CA96D17A51C814B3B20D333504F06FC2B50B64B87C51",
+    "corrected_sha256":  "B6F7AA634D936397765A5148CB6DF3DCD779DDBDBE15768A3ED716379006D9F0",
+    "backup":  "C:\\Users\\lee\\AppData\\Local\\hermes\\landmarksignal-v1\\work\\issue6-roster\\BOT_ROSTER_DRAFT.before-review-80e871a74377429794ad2a30a9dd62be.md",
+    "changes":  [
+                    "Clarified Lee final authority, ChatGPT advice and Jeeves coordination",
+                    "Allowed approved read-only tools for LMS-Reviewer",
+                    "Removed unverified example tool names"
+                ],
+    "original_run_evidence_modified":  false,
+    "human_acceptance":  "PENDING"
+}

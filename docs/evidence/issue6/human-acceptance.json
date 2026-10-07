@@ -1,0 +1,16 @@
+{
+  "issue_url": "https://github.com/nvrenuf/landmarksignal-operations/issues/6",
+  "kanban_task_id": "t_ccbe0361",
+  "kanban_run_id": 14,
+  "document_sha256": "b6f7aa634d936397765a5148cb6df3dcd779ddbdbe15768a3ed716379006d9f0",
+  "original_document_sha256": "15e0bdac81bc68366a28ca96d17a51c814b3b20d333504f06fc2b50b64b87c51",
+  "human_acceptance": "ACCEPTED",
+  "accepted_by": "Lee",
+  "acceptance_statement": "I accept the Issue #6 roster document",
+  "kanban_completion": "Lee reported Done after clicking Complete",
+  "kanban_completion_independently_inspected": false,
+  "recorded_at": "2026-10-07T22:38:44Z",
+  "original_run_evidence_preserved": true,
+  "github_issue_completion_authorized": false,
+  "bot_deployment_authorized": false
+}
