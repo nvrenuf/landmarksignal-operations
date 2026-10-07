@@ -23,6 +23,15 @@ import uuid
 # runpy does not add the script directory to sys.path like direct execution.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+if __name__ == "__main__":
+    # The managed interpreter starts with dependency generations inactive.
+    # Activate them before importing YAML, pywin32 or companion modules.
+    _root = Path(os.environ["LOCALAPPDATA"]) / "hermes"
+    os.environ["HERMES_HOME"] = str(_root / "profiles" / "jeeves")
+    os.environ["HERMES_PROFILE"] = "jeeves"
+    sys.path.insert(0, str(_root / "hermes-agent"))
+    import hermes_bootstrap  # noqa: F401
+
 from execution_guard_v1_final import (
     ChildAuth, ExecutionGuard, UnauthorizedError, _atomic_json,
 )
@@ -132,9 +141,6 @@ def main():
     if not sys.stdin.isatty():
         raise UnauthorizedError("Run this file directly from interactive PowerShell")
     root, _, profile = bootstrap()
-    # Select Hermes's managed interpreter before approval, a card claim or a
-    # held mutex. A late relaunch during AIAgent import would restart this test.
-    import hermes_bootstrap  # noqa: F401
     verify_installed(profile)
     from hermes_cli.config import load_config
     from hermes_cli.plugins import get_pre_tool_call_block_message
