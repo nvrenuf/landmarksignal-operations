@@ -106,6 +106,33 @@ class ImportTests(unittest.TestCase):
         self.assertFalse(list(self.root.iterdir()))
 
 
+class EntrypointTests(unittest.TestCase):
+    def test_managed_runpy_entrypoint_restores_companion_path_after_bootstrap(self):
+        import subprocess
+        import sys
+        script = str(Path(installer.__file__).resolve())
+        probe = """import os,runpy,sys,types
+scope=runpy.run_path(sys.argv[1],run_name='isolated_probe')
+main=scope['main']
+main.__globals__['os']=types.SimpleNamespace(name='nt',environ={'LOCALAPPDATA':os.getcwd()})
+sys.argv=[sys.argv[1]]
+sys.modules['hermes_bootstrap']=types.ModuleType('hermes_bootstrap')
+try:
+    main()
+except RuntimeError as error:
+    assert str(error)=='Native mutex support unavailable; nothing installed', str(error)
+    import github_queue_intake
+    assert github_queue_intake.__file__.startswith(os.path.dirname(sys.argv[0]))
+    print('PASS: companion module imported under isolated managed runpy')
+else:
+    raise AssertionError('Expected native-platform preflight refusal')
+"""
+        with tempfile.TemporaryDirectory() as folder:
+            result=subprocess.run([sys.executable,'-I','-B','-c',probe,script],cwd=folder,capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('PASS: companion module imported',result.stdout)
+
+
 class InstallTests(unittest.TestCase):
     def test_crlf_payload_backup_idempotence_unknown_edit_and_rollback(self):
         with tempfile.TemporaryDirectory() as folder:

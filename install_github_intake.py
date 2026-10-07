@@ -91,6 +91,9 @@ def main():
     os.environ['HERMES_PROFILE'] = 'jeeves'
     sys.path.insert(0, str(runtime))
     import hermes_bootstrap  # dependency activation before native imports
+    # Managed Python relaunches scripts through runpy, which does not add the script directory.
+    # Restore the companion-module path after dependency activation/relaunch.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     from github_queue_intake import REVISION, read_queue
     from execution_guard_v1_final import ExecutionGuard, HAS_WIN32EVENT
     if not HAS_WIN32EVENT:
