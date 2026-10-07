@@ -66,8 +66,8 @@ def make_agent():
     return agent, model
 
 
-def main():
-    if not sys.stdin.isatty():
+def main(dashboard_approval=None):
+    if dashboard_approval is None and not sys.stdin.isatty():
         raise RuntimeError("Run from Lee's interactive PowerShell")
     root, _, profile = bootstrap()
     verify_installed(profile)
@@ -96,25 +96,34 @@ def main():
         print("Task:", TASK_ID)
         print("Output:", document)
         print("One foreground Jeeves document draft; no tools, children, commits or infrastructure access")
-        if input("Type APPROVE ISSUE 7 to run this document task: ").strip() != "APPROVE ISSUE 7":
-            raise RuntimeError("Execution not approved")
+        if dashboard_approval is None:
+            if input("Type APPROVE ISSUE 7 to run this document task: ").strip() != "APPROVE ISSUE 7":
+                raise RuntimeError("Execution not approved")
+        else:
+            expected = hashlib.sha256(json.dumps(row, sort_keys=True).encode()).hexdigest()
+            if dashboard_approval.get("card_sha256") != expected:
+                raise RuntimeError("Card changed after dashboard approval; nothing released")
         guard = ExecutionGuard("7", TASK_ID, timeout=0)
         results = {"issue_url": ISSUE_URL, "kanban_task_id": TASK_ID, "profile": "jeeves",
                    "human_approval": True, "execution_mode": "foreground_no_tools_document",
                    "started_at": datetime.now(timezone.utc).isoformat(),
                    "task_body_sha256": hashlib.sha256(row["body"].encode()).hexdigest()}
+        if dashboard_approval is not None:
+            results["execution_mode"] = "dashboard_guarded_no_tools_document"
 
         def execute():
             from hermes_cli import kanban_db as kb
             from hermes_cli import kanban_db_dispatch as kbd
             task = None
             try:
+                if snapshot(conn).get(TASK_ID) != row:
+                    raise RuntimeError("Exact approved card changed before claim; nothing released")
                 if any(r["status"] == "running" for r in snapshot(conn).values()):
                     raise RuntimeError("Another card began running; nothing released")
                 if not kb.unblock_task(conn, TASK_ID):
                     raise RuntimeError("Exact manual hold could not be released")
                 task = kb.claim_task(conn, TASK_ID, ttl_seconds=900)
-                if task is None or task.id != TASK_ID or ISSUE_URL not in (task.body or ""):
+                if task is None or task.id != TASK_ID or task.body != row["body"]:
                     raise RuntimeError("Exact card was not claimed; no model call made")
                 results["kanban_run_id"] = task.current_run_id
                 kbd._set_worker_pid(conn, TASK_ID, os.getpid())
@@ -123,7 +132,7 @@ def main():
                 print("RUNNING: Jeeves is drafting the document (120-second model-run budget)", flush=True)
                 agent, model = make_agent()
                 try:
-                    prompt = task.body + "\n\nReviewed facts for the draft:\n" + (
+                    prompt = task.body + "\n\nThis run: task " + TASK_ID + ", run " + str(task.current_run_id) + ", mode " + results["execution_mode"] + ".\n\nReviewed facts for the draft:\n" + (
                         "Produce a concise Markdown document, at most 900 words. Include a nine-row mapping table in the given order. "
                         "Do not invent native states or commands. Idea/Defined/Sprint Ready are GitHub planning stages, not dispatch authority. "
                         "Hermes triage is specification intake; todo waits for dependencies or assignment; ready is eligible waiting work; "
@@ -133,8 +142,8 @@ def main():
                         "Manual orchestration disables automatic decomposition only, not worker dispatch. "
                         "A native manual hold requires a blocked event as well as blocked status. "
                         "The approved foreground route owns a Windows mutex through its actual agent lifetime and cleanup. "
-                        "The first draft is this one local Jeeves no-tools run; no persistent worker or child is deployed. "
-                        "Detached dashboard dispatch, full automatic GitHub handoff, old-session policy activation and startup recovery remain unverified. "
+                        "This draft is one manually launched local Jeeves no-tools run; no general-purpose worker or child is deployed. "
+                        "Ordinary native dashboard dispatch, full automatic GitHub handoff, old-session policy activation and startup recovery remain unverified. "
                         "Project statuses do not enforce permissions. Include exact issue URL, task/run IDs, scoped workspace, approved deliverable, "
                         "separate child approval when applicable, evidence/artifact handoff, and Lee's human review before completion/merge. "
                         "Explicitly label intended rules versus verified foreground behavior. No instructions to nudge a dispatcher or bypass a guard."
@@ -187,4 +196,26 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--dashboard-approved-issue7"]:
+        record_path = Path(os.environ["LOCALAPPDATA"]) / "hermes/landmarksignal-v1/work/issue7-status-mapping/dashboard-launch.json"
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        import hmac
+        token = os.environ.pop("LANDMARKSIGNAL_DASHBOARD_APPROVAL", "")
+        if not token or not hmac.compare_digest(token, record.get("token", "")) or record.get("state") != "launching":
+            raise RuntimeError("No matching dashboard approval")
+        record.pop("token", None)
+        record.update(state="running", worker_pid=os.getpid())
+        _atomic_json(record_path, record)
+        try:
+            main(dashboard_approval=record)
+        except BaseException as error:
+            record.update(state="incomplete", error_type=type(error).__name__)
+            _atomic_json(record_path, record)
+            raise
+        else:
+            record.update(state="review")
+            _atomic_json(record_path, record)
+    elif not sys.argv[1:]:
+        main()
+    else:
+        raise RuntimeError("Unsupported arguments")
