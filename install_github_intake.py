@@ -136,6 +136,11 @@ def main():
     required = {'triage', 'initial_status', 'assignee', 'workspace_kind', 'workspace_path', 'project_id', 'board', 'idempotency_key', 'max_retries'}
     if not required.issubset(inspect.signature(kb.create_task).parameters):
         raise RuntimeError('Native create_task interface differs; nothing installed')
+    from hermes_cli.kanban_db_graph import initial_task_state
+    if ('running' not in kb.VALID_INITIAL_STATUSES
+            or initial_task_state(None, (), 'running', True, None)[0] != 'triage'):
+        raise RuntimeError('Native Triage routing differs; nothing installed')
+    print('PASS: native creation parameters resolve to Triage, without a task claim')
     import sqlite3
     from contextlib import closing
     with closing(sqlite3.connect(board.resolve().as_uri() + '?mode=ro', uri=True)) as conn:

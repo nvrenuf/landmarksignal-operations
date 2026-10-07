@@ -61,6 +61,10 @@ class ImportTests(unittest.TestCase):
         self.conn.commit()
         self.count=0
         def create(conn,**kwargs):
+            # Native revision 0c2ff85 validates these before triage overrides state.
+            if kwargs['initial_status'] not in {'running', 'blocked'}:
+                raise ValueError('initial_status must be running or blocked')
+            self.assertTrue(kwargs['triage'])
             self.count+=1
             task='t_'+str(self.count)
             conn.execute('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?)',(task,kwargs['idempotency_key'],kwargs['body'],

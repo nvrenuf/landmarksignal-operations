@@ -152,7 +152,7 @@ def import_records(conn, kb, records, work_root):
                 with source_path.open('x', encoding='utf-8', newline='\n') as stream:
                     json.dump(record, stream, indent=2, ensure_ascii=False)
             task_id = kb.create_task(conn, title='Issue #%s: %s' % (record['issue']['number'], record['issue']['title']),
-                body=body(record, source_path), triage=True, initial_status='ready', assignee=None,
+                body=body(record, source_path), triage=True, initial_status='running', assignee=None,
                 created_by='Lee manual GitHub queue intake', workspace_kind='dir', workspace_path=str(workspace),
                 project_id='', board='landmarksignal', idempotency_key=key(record), max_retries=0)
             card = dict(conn.execute('SELECT * FROM tasks WHERE id=?', (task_id,)).fetchone())
