@@ -57,18 +57,29 @@ def task_snapshot(path):
         return {row["id"]: dict(row) for row in conn.execute("SELECT * FROM tasks")}
 
 
-def guard_contender(guard):
+def contender_command():
+    here = str(Path(__file__).resolve().parent)
     code = (
-        "import sys; from execution_guard_v1_final import ExecutionGuard,LockHeldError; "
+        "import os, sys; from pathlib import Path\n"
+        f"sys.path.insert(0, {here!r})\n"
+        "sys.path.insert(0, str(Path(os.environ['LOCALAPPDATA']) / 'hermes/hermes-agent'))\n"
+        "import hermes_bootstrap\n"
+        "from execution_guard_v1_final import ExecutionGuard,LockHeldError\n"
         "g=ExecutionGuard('19','contender',timeout=0)\n"
-        "try:\n g.acquire()\nexcept LockHeldError:\n sys.exit(0)\n"
-        "else:\n g.release(); sys.exit(1)\n"
+        "try:\n g.acquire()\nexcept LockHeldError:\n print('CONTENDER_BLOCKED'); sys.exit(0)\n"
+        "else:\n g.release(); print('CONTENDER_ACQUIRED'); sys.exit(1)\n"
     )
-    result = subprocess.run([sys.executable, "-c", code],
+    return [sys.executable, "-I", "-B", "-c", code]
+
+
+def guard_contender(guard):
+    result = subprocess.run(contender_command(),
                             cwd=str(Path(__file__).resolve().parent), timeout=15,
                             capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError("A real competing process was not blocked by the owned guard")
+    if result.returncode != 0 or "CONTENDER_BLOCKED" not in result.stdout.splitlines():
+        raise RuntimeError("Contender check failed: exit=" + str(result.returncode)
+                           + "; stdout=" + result.stdout[-1500:]
+                           + "; stderr=" + result.stderr[-3000:])
     if not guard._acquired or guard._owner != (os.getpid(), threading.current_thread()):
         raise RuntimeError("Foreground execution ownership was lost")
 
@@ -137,11 +148,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--retry-blocked", action="store_true",
                         help="Explicitly retry this runner's existing blocked Issue #19 card")
+    parser.add_argument("--check-contender", action="store_true",
+                        help="Check native cross-process blocking without a model call or card mutation")
     args = parser.parse_args()
     if not sys.stdin.isatty():
         raise UnauthorizedError("Run this file directly from interactive PowerShell")
     root, _, profile = bootstrap()
     verify_installed(profile)
+    if args.check_contender:
+        if args.retry_blocked:
+            raise RuntimeError("Use either contender diagnostic or acceptance retry")
+        guard = ExecutionGuard("19", "contender-diagnostic", timeout=0)
+        guard.execute(lambda: guard_contender(guard))
+        print("PASS: real managed-interpreter contender was blocked by the owned mutex")
+        print("No model call, card mutation or child authorization performed")
+        return
     from hermes_cli.config import load_config
     from hermes_cli.plugins import get_pre_tool_call_block_message
     cfg = load_config()

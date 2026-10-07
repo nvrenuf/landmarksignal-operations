@@ -9,6 +9,27 @@ import unittest
 
 
 class AcceptanceEntrypointTests(unittest.TestCase):
+    def test_contender_activates_dependencies_and_reports_actual_block(self):
+        import guarded_jeeves_acceptance as runner
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = Path(directory) / "hermes/hermes-agent"
+            runtime.mkdir(parents=True)
+            (runtime / "hermes_bootstrap.py").write_text(
+                "import os; os.environ['TEST_DEPENDENCIES_ACTIVE']='yes'\n")
+            (runtime / "execution_guard_v1_final.py").write_text(
+                "import os\n"
+                "assert os.environ.get('TEST_DEPENDENCIES_ACTIVE') == 'yes'\n"
+                "class LockHeldError(Exception): pass\n"
+                "class ExecutionGuard:\n"
+                " def __init__(self,*args,**kwargs): pass\n"
+                " def acquire(self): raise LockHeldError()\n")
+            env = {**os.environ, "LOCALAPPDATA": directory}
+            env.pop("TEST_DEPENDENCIES_ACTIVE", None)
+            result = subprocess.run(runner.contender_command(), env=env,
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "CONTENDER_BLOCKED")
+
     def test_dependency_activation_precedes_companion_imports(self):
         runner = Path(__file__).resolve().parent / "guarded_jeeves_acceptance.py"
         with tempfile.TemporaryDirectory() as directory:
