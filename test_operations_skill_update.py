@@ -52,6 +52,19 @@ class SkillUpdateTests(unittest.TestCase):
             self.assertEqual({p: p.read_bytes() for p in before}, before)
             self.assertFalse(recovery.exists())
 
+    def test_windows_crlf_checkout_installs_canonical_payload(self):
+        with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
+            source, target, recovery, old, new = self.fixture(directory)
+            for name in update.FILES:
+                (source / "skills" / "landmarksignal-operations" / name).write_bytes(
+                    new[name].replace(b"\n", b"\r\n")
+                )
+            backup = update.install(source, target, recovery)
+            for name in update.FILES:
+                self.assertEqual((target / name).read_bytes(), new[name])
+                self.assertEqual((backup / "skill-before" / name).read_bytes(), old[name])
+            self.assertIsNone(update.install(source, target, recovery))
+
     def test_failed_second_replace_rolls_back_first(self):
         with tempfile.TemporaryDirectory() as directory:
             source, target, recovery, old, new = self.fixture(directory)
