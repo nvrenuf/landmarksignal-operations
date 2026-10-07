@@ -1,5 +1,6 @@
 """Preserve and park the unexpectedly rewritten Issue #19 acceptance graph."""
 
+from contextlib import closing
 import json
 import os
 from pathlib import Path
@@ -22,7 +23,7 @@ ISSUE_URL = "https://github.com/nvrenuf/landmarksignal-operations/issues/19"
 
 
 def repair(path, backup, source_body):
-    with sqlite3.connect(path, timeout=5, isolation_level=None) as conn:
+    with closing(sqlite3.connect(path, timeout=5, isolation_level=None)) as conn:
         conn.row_factory = sqlite3.Row
         conn.execute("BEGIN IMMEDIATE")
         try:
@@ -52,8 +53,8 @@ def repair(path, backup, source_body):
             if external:
                 raise RuntimeError("Root depends on a card outside its generated children; nothing changed")
             backup.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as reader:
-                with sqlite3.connect(backup) as destination:
+            with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as reader:
+                with closing(sqlite3.connect(backup)) as destination:
                     reader.backup(destination)
             now = int(time.time())
             for child in sorted(children):
