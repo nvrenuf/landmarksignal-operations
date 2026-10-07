@@ -10,6 +10,9 @@ try {
     Write-Host '=== DOCUMENT HANDOFF SETUP - NO MODEL CALL OR DISPATCH ==='
     if (!(Test-Path -LiteralPath $python -PathType Leaf)) { throw "Python missing: $python" }
 
+    # Hermes consumes --profile before managed-interpreter relaunch, so the
+    # listening child need not retain that flag. Effective Jeeves configuration
+    # is verified by preparation; API launches enforce the selected profile.
     # Only restart the existing native browser dashboard owned by this user.
     $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 9119 -ErrorAction SilentlyContinue |
         Select-Object -ExpandProperty OwningProcess -Unique)
@@ -19,7 +22,6 @@ try {
     if (!$process -or $process.Name -notmatch '^python(w)?\.exe$' -or
         $process.CommandLine -notmatch 'hermes_cli\.main' -or
         $process.CommandLine -notmatch '\bdashboard\b' -or
-        $process.CommandLine -notmatch '--profile\s+jeeves' -or
         !$process.ExecutablePath.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Port 9119 is not the reviewed Jeeves browser dashboard. Nothing changed.'
     }
