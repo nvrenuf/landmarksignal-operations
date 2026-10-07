@@ -31,7 +31,9 @@ def install(source, target, recovery):
         src, dst = payload / relative, target / relative
         if src.is_symlink() or dst.is_symlink():
             raise RuntimeError("Refusing a linked skill file: " + relative)
-        content = src.read_bytes()
+        # Git may check Markdown out as CRLF on Windows. Verify/install the
+        # canonical LF payload; accept no other content normalization.
+        content = src.read_bytes().replace(b"\r\n", b"\n")
         if hashlib.sha256(content).hexdigest() != new[relative]:
             raise RuntimeError("Source checksum differs: " + relative)
         current = dst.read_bytes()
