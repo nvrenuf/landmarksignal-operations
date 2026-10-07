@@ -1,0 +1,6 @@
+{
+  "html_url": "https://github.com/nvrenuf/landmarksignal-operations/issues/6",
+  "state": "open",
+  "updated_at": "2026-10-01T05:16:40Z",
+  "body": "## Purpose\n\nDefine the LandmarkSignal Hermes Bot roster.\n\n## Current Operating Environment\n\nFor this phase, LandmarkSignal will use **Hermes Agent rather than Hermes Desktop** as the active operating environment.\n\n## Initial Planned Bots\n\n- Argus (domain lead)\n- LMS-Coder\n- LMS-Security\n- LMS-Reviewer\n- LMS-Research\n\n## Acceptance Criteria\n\n- [ ] Bot definitions documented\n- [ ] Bot responsibilities defined\n- [ ] Bot creation tasks created\n- [ ] Roster approved\n- [ ] Definitions are compatible with Hermes Agent\n\n## Notes\n\nDo not create the Bots as part of this issue. This issue defines what needs to be created."
+}
