@@ -1,0 +1,15 @@
+**Implementation Status:**
+
+- [x] Hermes Agent/Jeeves baseline documented
+- [x] Hermes Agent profile/runtime verified
+- [x] GitHub access from Hermes Agent verified
+- [x] DGX-Forge baseline documented
+- [x] DGX-Lab baseline documented
+- [x] Non-disruption policy documented
+- [x] Baseline stored in docs/INFRASTRUCTURE_BASELINE.md
+
+**PR:** https://github.com/nvrenuf/landmarksignal-operations/pull/18
+
+**Kanban Task:** t_b4bb78ed
+
+**Next Step:** Human Review

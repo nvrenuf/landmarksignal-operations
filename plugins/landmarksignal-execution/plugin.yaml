@@ -1,0 +1,6 @@
+name: landmarksignal-execution
+version: "1.0.0"
+description: "Require a manually approved owned issue scope for Jeeves execution."
+author: "LandmarkSignal"
+hooks:
+  - pre_tool_call
