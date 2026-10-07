@@ -19,6 +19,10 @@ from types import SimpleNamespace
 from urllib.parse import urlparse
 import uuid
 
+# Hermes may relaunch this file through runpy with isolated Python (-I).
+# runpy does not add the script directory to sys.path like direct execution.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from execution_guard_v1_final import (
     ChildAuth, ExecutionGuard, UnauthorizedError, _atomic_json,
 )
@@ -128,6 +132,9 @@ def main():
     if not sys.stdin.isatty():
         raise UnauthorizedError("Run this file directly from interactive PowerShell")
     root, _, profile = bootstrap()
+    # Select Hermes's managed interpreter before approval, a card claim or a
+    # held mutex. A late relaunch during AIAgent import would restart this test.
+    import hermes_bootstrap  # noqa: F401
     verify_installed(profile)
     from hermes_cli.config import load_config
     from hermes_cli.plugins import get_pre_tool_call_block_message
