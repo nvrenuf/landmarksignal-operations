@@ -39,6 +39,16 @@ CREATE TABLE task_links(parent_id TEXT,child_id TEXT);
             self.assertEqual(c.execute("SELECT COUNT(*) FROM task_links").fetchone()[0],0)
             self.assertEqual(c.execute("SELECT kind FROM task_events WHERE id=1").fetchone(),("decomposed",))
 
+    def test_promoted_ready_card_is_restored_with_native_manual_hold_events(self):
+        with closing(sqlite3.connect(self.path)) as c, c:
+            c.execute("UPDATE tasks SET status='ready',body=? WHERE id=?", (ISSUE_URL, ROOT_ID))
+            c.execute("INSERT INTO task_events(task_id,kind,payload,created_at) VALUES (?,'unblocked','{}',2)", (ROOT_ID,))
+        repair(self.path, self.backup, "reviewed issue body")
+        with closing(sqlite3.connect(self.path)) as c:
+            for task_id in (ROOT_ID, "child"):
+                self.assertEqual(c.execute("SELECT status FROM tasks WHERE id=?", (task_id,)).fetchone()[0], "blocked")
+                self.assertEqual(c.execute("SELECT kind FROM task_events WHERE task_id=? AND kind IN ('blocked','unblocked') ORDER BY id DESC LIMIT 1", (task_id,)).fetchone()[0], "blocked")
+
     def test_repair_closes_every_connection_on_success_and_refusal(self):
         connect = sqlite3.connect
         connections = []
