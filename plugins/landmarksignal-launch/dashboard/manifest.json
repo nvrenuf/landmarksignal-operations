@@ -1,11 +1,16 @@
 {
   "name": "landmarksignal-launch",
   "label": "Jeeves Launch",
-  "description": "Manual Issue 7 document launch and review handoff",
+  "description": "Manual approved document launch and review handoff",
   "icon": "Play",
-  "version": "1.0.0",
-  "tab": {"path": "/jeeves-launch", "position": "after:kanban"},
-  "slots": ["pre-main"],
+  "version": "1.1.0",
+  "tab": {
+    "path": "/jeeves-launch",
+    "position": "after:kanban"
+  },
+  "slots": [
+    "pre-main"
+  ],
   "entry": "dist/index.js",
   "api": "plugin_api.py"
 }

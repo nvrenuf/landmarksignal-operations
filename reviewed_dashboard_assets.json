@@ -1,0 +1,14 @@
+{
+  "dashboard/plugin_api.py": "c817a30a00987366c810e74298622a236f128de028b0ce29ca0998e12d139a43",
+  "dashboard/dist/index.js": "d5454d877a3d3529a099cc746bc981566be5742eeb9f676d325b12f35ddc4e43",
+  "__init__.py": "d35a8401905aa8d7331e4c4b807c599e15da45206dde0de8eb5b6536ff8ea45b",
+  "plugin.yaml": "610df536467e062ad643d4cac5cec69e3346449c216aa7b4c6cc3caed581a8a7",
+  "dashboard/manifest.json": "c38327b104ca7debab2c69a200af8e1ccc593b304cb1123632fc51aa0725071b",
+  "dashboard/runner/guarded_issue7_document.py": "de0ea4b4dd762bc1f80894157f66984904481a204b4f1b23c605b06ba283aacb",
+  "dashboard/runner/execution_guard_v1_final.py": "d0bd1b6c749caf16b784c2ee07e302a90e63d3de7fb32b81b8eaa2bf81359c27",
+  "dashboard/runner/install_jeeves_policy.py": "7d9548f22f604f3fd646b8db1072c8470f100240353ca89de1107bb7897c4e52",
+  "dashboard/runner/landmarksignal_policy.py": "3c90716e1a931cc8cf37fbc217694c87862ae942d71030464b46e727c0eeaf75",
+  "dashboard/runner/configure_jeeves_v1.py": "ffa4c7eda963040e16b1cde7274035be83e971a98f651f04ac88edb93d068128",
+  "dashboard/runner/plugins/landmarksignal-execution/__init__.py": "b7f8e76e83c6b7d3fbbed91c5bbb4d4660309a6d8810b91aaa0e5b2b684cc736",
+  "dashboard/runner/plugins/landmarksignal-execution/plugin.yaml": "25a21531580402f65629756cf805bac7fbc69ee34527d6d703fbe8c0d41e70f8"
+}
