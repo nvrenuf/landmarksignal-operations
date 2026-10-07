@@ -1,0 +1,11 @@
+{
+  "old_sha256": {
+    "dashboard/plugin_api.py": "51f553c33cffac37f4fb5321e79da52bf72596a6b8de71d2e6f16d84fd0044a4",
+    "dashboard/dist/index.js": "61b2a26412f93c9a38bdd8c270e383b4b140fed77ccde5c84b3c8bc1de16f067"
+  },
+  "new_sha256": {
+    "dashboard/plugin_api.py": "8933bc1cef60bb3d03d646aeccfac105441fcf61f8f9df19ca07b87b4725141e",
+    "dashboard/dist/index.js": "33f42215985c2040220dd407719898afafd793b51201136648380ccb20b03e69",
+    "dashboard/runner/github_queue_intake.py": "580865f42476fb3a114bd2654aa3a634a5e6f5822e6b5f98d2bce7dddc674483"
+  }
+}

@@ -169,3 +169,19 @@ def document(request: Request):
     if not target.is_file():
         raise HTTPException(404, "Document is not available yet")
     return {"filename": target.name, "markdown": target.read_text(encoding="utf-8")}
+
+
+@router.post('/github-intake')
+def github_intake(request: Request):
+    require_jeeves(request)
+    if request.headers.get('origin') != str(request.base_url).rstrip('/'):
+        raise HTTPException(403, 'Import from this dashboard page')
+    from github_queue_intake import run_intake
+    root, _, _ = paths()
+    try:
+        return run_intake(root)
+    except Exception as error:
+        # Never return provider/CLI errors containing keys. Expected refusal text is local.
+        if isinstance(error, RuntimeError):
+            raise HTTPException(409, str(error))
+        raise HTTPException(409, 'Intake stopped: ' + type(error).__name__ + '. No automatic retry.')
