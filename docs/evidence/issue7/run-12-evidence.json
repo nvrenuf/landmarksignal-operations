@@ -1,0 +1,29 @@
+{
+  "issue_url": "https://github.com/nvrenuf/landmarksignal-operations/issues/7",
+  "kanban_task_id": "t_0b33c85e",
+  "profile": "jeeves",
+  "human_approval": true,
+  "execution_mode": "dashboard_guarded_no_tools_document",
+  "started_at": "2026-10-07T21:30:28.611986+00:00",
+  "task_body_sha256": "258350b3479fa8dc826d4de812d02c2c69f88fc9c47ed75d6eca18ef03927ed9",
+  "kanban_run_id": 12,
+  "model": "Qwen3.5-9B-Q4_K_M",
+  "api_calls": 1,
+  "tools_exposed": 0,
+  "generation_limits": {
+    "max_tokens": 1800,
+    "max_iterations": 1,
+    "reasoning_effort": "none"
+  },
+  "model_completed": true,
+  "response_characters": 1821,
+  "missing_stages": [],
+  "model_response_path": "C:\\Users\\lee\\AppData\\Local\\hermes\\landmarksignal-v1\\work\\issue7-status-mapping\\model-response.txt",
+  "status": "AWAITING_HUMAN_REVIEW",
+  "original_cards_preserved": true,
+  "document": "C:\\Users\\lee\\AppData\\Local\\hermes\\landmarksignal-v1\\work\\issue7-status-mapping\\KANBAN_STATUS_MAPPING.md",
+  "document_sha256": "971400f85f3edd85b64d7b2f31dbee63b5681f9096f09eef4b4a8ac80bdcc9ec",
+  "scope_held_through_agent_close": true,
+  "completed_at": "2026-10-07T21:30:38.211768+00:00",
+  "kanban_status": "review"
+}

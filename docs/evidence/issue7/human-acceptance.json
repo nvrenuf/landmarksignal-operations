@@ -1,0 +1,24 @@
+{
+  "issue_url": "https://github.com/nvrenuf/landmarksignal-operations/issues/7",
+  "kanban_task_id": "t_0b33c85e",
+  "kanban_run_id": 12,
+  "human_acceptance": true,
+  "acceptance_source": "Lee explicitly accepted the Issue #7 document in this conversation on 2026-10-07.",
+  "kanban_completion": {
+    "status": "done",
+    "verification": "Reported by Lee after clicking Complete in the dashboard; not independently read from the local database."
+  },
+  "accepted_document_sha256": "53f41254bca43d10a1bbd12c060791ce2dac1256dd698ca122a7242e825ba251",
+  "original_run_evidence_preserved": true,
+  "scope": "Status-mapping document pilot only. Issue #7 and PR #23 merge are not completed by this acceptance.",
+  "limitations": [
+    "Ordinary native dispatcher guard integration unverified",
+    "Automatic GitHub sync unverified",
+    "Startup recovery unverified",
+    "Dependency handling not demonstrated by this pilot"
+  ],
+  "records": [
+    "run-12-evidence.json",
+    "review-correction.json"
+  ]
+}

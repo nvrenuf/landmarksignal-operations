@@ -1,0 +1,14 @@
+{
+    "issue_url":  "https://github.com/nvrenuf/landmarksignal-operations/issues/7",
+    "corrected_at":  "2026-10-07T21:38:58.1005479Z",
+    "original_document_sha256":  "971400f85f3edd85b64d7b2f31dbee63b5681f9096f09eef4b4a8ac80bdcc9ec",
+    "revised_document_sha256":  "53f41254bca43d10a1bbd12c060791ce2dac1256dd698ca122a7242e825ba251",
+    "original_evidence_sha256":  "4673B9C0289EF1D79E8749031F6A4702E3913EEE3891ED6CE591C954F31F726F",
+    "corrections":  [
+                        "GitHub status never grants execution permission.",
+                        "Native manual holds use blocked events",
+                        "**Unverified:** Ordinary native dispatcher guard integration"
+                    ],
+    "human_acceptance":  "PENDING",
+    "task_records_changed":  false
+}

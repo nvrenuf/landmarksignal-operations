@@ -1,0 +1,4 @@
+name: landmarksignal-launch
+version: "1.0.0"
+description: "Manually launch the existing Issue 7 document through the owned Jeeves guard."
+author: LandmarkSignal
