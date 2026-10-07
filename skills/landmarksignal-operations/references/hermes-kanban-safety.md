@@ -10,6 +10,6 @@ Keep approved issue/task/workspace/source snapshot fixed through the work lifeti
 
 Require applicable distinct human approvals for child creation and child execution; parent approval is insufficient. Current document tasks permit neither children nor tools. Do not enable decomposition, spawn bots or assign a worker to work around a blocked task.
 
-Use native manual hold semantics, including the blocked event recognized by Hermes, rather than editing a status cell and assuming it persists. Returning completed output to Review belongs to the approved run. Lee alone accepts and releases completion. Preserve run evidence and record amendments separately.
+Permit normal promotion to Ready, but require Lee's exact-scope approval at the guarded launch boundary before work starts. Verify every applicable automatic dispatch path is disabled and demonstrate unapproved Ready cards remain idle. The completed document pilots used native blocked events as sticky holds; preserve that evidence without treating those holds as a target requirement. Returning completed output to Review belongs to the approved run. Lee alone accepts and releases completion. Preserve run evidence and record amendments separately.
 
 Ordinary dispatcher supervision, tool-enabled work, cross-session enforcement, same-user tamper resistance, general scheduling and startup recovery remain unverified. Do not claim globally enforced safety outside participating accepted routes.

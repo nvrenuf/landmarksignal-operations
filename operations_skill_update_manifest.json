@@ -8,10 +8,10 @@
     "references/acceptance-test.md": "c62cbb3f584c741551d7de0ab3f6ecf773b950185e723f93b9eeb99845605253"
   },
   "new_sha256": {
-    "SKILL.md": "a20f104e5c10ea8e2fcae947b9681dca43c016dd530e51d5b317e5ee20c95ead",
+    "SKILL.md": "7c8795d8e431210f2b128eb113a253b9375eb5fe23dd696d6b72ea468b5116f0",
     "references/execution-guard-v1.md": "498fb27a42a3972df501925f5e55ff55247ede44cb49c2f6bdf5494d723eb67b",
     "references/acceptance-test.md": "d332394b268311bb6a85888cb2d650a6cc85082ee3d081a603b0fbd000a8681f",
-    "references/hermes-kanban.md": "e68ecf43d73f3752ead5af2fa2815b6fd3faf0f63fa9d2ffa1918e4b9736fbea",
-    "references/hermes-kanban-safety.md": "7a12d3ce873997c2415f24e92b8a699274f58e20e428418a4930451863854107"
+    "references/hermes-kanban.md": "6794bc17d50dbc5f64eab570a8aae29a2f661f8b7141e9c613b82f645e3c3e8f",
+    "references/hermes-kanban-safety.md": "8054c551677b1d262f79fa2d4b6a14e1e931bdeb1d2beb0a2ea10a35594d2626"
   }
 }

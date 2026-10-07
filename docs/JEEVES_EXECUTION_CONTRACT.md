@@ -22,6 +22,6 @@ Returning approved work to Review is part of the bounded run; it does not requir
 
 ## Enforcement and escalation
 
-Statuses, assignees and card movements do not grant execution authorization. Maintain one participating guarded execution at a time. Do not bypass policy through another CLI, tool, direct database write, auxiliary model route or dispatcher.
+Normal dependency-based promotion to Ready is allowed and requires no execution approval. Ready is eligibility, not permission: an unapproved Ready card must remain idle. Lee authorizes the exact work at the guarded launch boundary. Statuses, assignees and card movements do not grant execution authorization. Maintain one participating guarded execution at a time. Do not bypass policy through another CLI, tool, direct database write, auxiliary model route or dispatcher.
 
 Use [workflow](GITHUB_HERMES_WORKFLOW.md), [execution policy](KANBAN_EXECUTION_POLICY.md) and [document procedure](MANUAL_DOCUMENT_HANDOFF.md). If an existing policy blocks an authorized operation, report the boundary and implement/review a narrow permitted entry rather than disabling the policy. Stop and escalate unclear scope or unsupported entry paths to Lee.

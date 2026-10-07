@@ -8,7 +8,7 @@ Use the existing `landmarksignal` board at `%LOCALAPPDATA%\hermes\kanban\boards\
 
 Follow [GitHub to Hermes workflow](GITHUB_HERMES_WORKFLOW.md). Import/prepare, specification drafting, execution, child work and acceptance are distinct permissions. A GitHub field or native state never replaces exact task/scope approval.
 
-Native To-do can automatically become Ready. Native Specify uses an auxiliary model and invokes this promotion path. Native Scheduled is a time wait, not human approval. Until a guarded reusable intake/specification route exists, do not use those paths to launch new work. Existing document entries use verified sticky Blocked holds until manual release.
+Permit normal dependency-based To-do -> Ready promotion. Ready means prepared and eligible, not authorized to execute. Lee approves the exact scope at Approve and run; no automatic dispatcher may consume an unapproved Ready card. Native Specify uses an auxiliary model and invokes promotion, so its guarded planning boundary still requires verification. Native Scheduled is a time wait, not human approval. Existing document pilots used sticky Blocked holds; preserve those records without treating them as the target reusable workflow.
 
 ## Current enforcement
 
@@ -17,6 +17,10 @@ Native To-do can automatically become Ready. Native Specify uses an auxiliary mo
 - Gateway dispatch and automatic review dispatch remain off. Manual orchestration disables automatic decomposition only. Do not enable unattended/cron dispatch, swarm or ordinary dispatch to implement intake.
 - Maximum one participating guarded execution; no discretionary concurrency override in the accepted implementation. Cross-session enforcement and same-user tamper resistance are not established.
 - Child creation and execution require applicable separate scoped Lee approval. The two document routes expose no tools or children.
+
+## General Ready-card launch verification still required
+
+Verify actual gateway/background/ordinary dispatch settings and paths, not just one profile flag. Demonstrate an unapproved Ready card remains idle, a changed/unapproved scope is denied, and only the exact approved card launches under the existing guard. Do not enable ordinary dispatch or relax the tool hook to obtain this behavior. Existing document tests do not establish this general boundary.
 
 ## Approved procedure
 

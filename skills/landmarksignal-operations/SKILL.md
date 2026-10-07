@@ -20,7 +20,7 @@ Use the enabled GitHub skill for `gh` syntax and its matching reference. Verify 
 
 Preserve source issue URL, original requirements and source version/hash in any handoff; do not replace the source with model-written scope. Importing a task permits only the explicitly approved intake, not implementation, worker creation or child work.
 
-Do not call shell, task mutation, native Specify/Decompose or ordinary dispatch to bypass the installed execution policy. Native To-do can auto-promote to Ready; Scheduled waits on time and is not an approval gate. Reusable guarded intake/specification is pending. Use only installed source-reviewed document contracts in Jeeves Launch for current operational runs.
+Do not call shell, task mutation, native Specify/Decompose or ordinary dispatch to bypass the installed execution policy. Allow normal dependency-based To-do promotion to Ready. Ready is eligibility, not execution permission: wait for Lee's exact-scope Approve and run action, with automatic worker dispatch disabled and the launch boundary verified. Scheduled waits on time and does not grant approval. Reusable guarded intake/specification is pending. Use only installed source-reviewed document contracts in Jeeves Launch for current operational runs.
 
 Keep one guarded execution at a time, distinct child approvals, Review before human completion and immutable original evidence. GitHub status is never permission. Do not change Priority, Execution Order, Sprint, authorization, close issues, merge or deploy without the applicable explicit approval.
 

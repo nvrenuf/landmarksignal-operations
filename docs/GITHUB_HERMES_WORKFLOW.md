@@ -12,8 +12,9 @@ This document defines the agreed workflow and distinguishes it from implemented 
 |---|---|---|
 | GitHub backlog | Select one issue and bounded deliverable; do not mirror the whole project. | GitHub CLI access as nvrenuf was verified in Lee's PowerShell, not inside Jeeves. |
 | Triage | Preserve source URL, original requirements, updated timestamp and source hash; prepare a specification. | Native card creation and specification exist. Reusable issue intake and guarded specification are not yet connected. Import permission is not execution permission. |
-| To-do / specification review | Review scope, deliverable, acceptance criteria, dependencies and questions. | Native To-do can automatically become Ready. Do not use it as an approval hold. Until a verified review hold exists, approved routes use native sticky Blocked holds. |
-| Ready / Scheduled | Explicitly release the exact reviewed task and scope for immediate or timed execution. | Existing guarded document launcher supports two reviewed contracts. Scheduled waits on time; it does not supply approval. General scheduled execution is unverified. |
+| To-do | Resolve specification details and dependencies. | Normal dependency-based promotion to Ready is allowed; no execution approval is implied. |
+| Ready | Prepared and dependency-cleared; wait for Lee to approve execution of this exact scope. | Ready is eligibility, not permission. The launch boundary must prevent any automatic worker start while approval is absent; this general route remains unverified. |
+| Scheduled | Hold approved work for a specified time, if explicitly requested. | A time threshold is not approval. General scheduled execution remains unverified. |
 | In Progress | Execute under the guard for the whole work lifetime. | Two no-tools document tasks and the foreground acceptance route were validated. Ordinary dispatcher and tool-enabled workers are not accepted. |
 | Review | Return output and evidence; Lee accepts or requests changes. | Document pilots returned to native Review and were accepted. |
 | Done | Complete only the accepted card; publish results to GitHub and assess all issue criteria. | Issue #7 and #6 document cards completed. Broader GitHub issues remain open. Publication currently occurs manually through reviewed PRs. |
@@ -34,7 +35,13 @@ Reviewed Hermes revision: `0c2ff854a5c5121c75ac0b0a35241a580ee27fb7`.
 
 Sources: [native parser](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/hermes_cli/kanban_parser.py), [specifier](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/hermes_cli/kanban_specify.py), [database transitions](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/hermes_cli/kanban_db.py), [dashboard API](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/plugins/kanban/dashboard/plugin_api.py).
 
-Next implementation boundary: reuse authenticated GitHub reads and native Kanban creation; add a narrow trusted intake/approval path only where needed. Before enabling it, bind the exact issue/task/workspace/source snapshot, prevent duplicate intake, preserve the original source separately from model-written specs, keep an explicit hold against promotion, verify the auxiliary route/model, and prove no child creation or ordinary worker launch occurs. Do not relax the global tool hook or enable automatic decomposition to achieve intake.
+Next implementation boundary: reuse authenticated GitHub reads and native Kanban creation; add a narrow trusted intake/approval path only where needed. Before enabling it, bind the exact issue/task/workspace/source snapshot, prevent duplicate intake, preserve the original source separately from model-written specs, allow normal promotion to Ready, enforce explicit approval at the launch boundary, verify automatic dispatch is disabled on every applicable host path, verify the auxiliary route/model, and prove a Ready card stays idle without approval and only the exact approved card launches under the guard. Do not relax the global tool hook or enable automatic decomposition to achieve intake.
+
+## Ready and launch approval
+
+Ready means the task is prepared and dependencies are satisfied. It is permitted to reach Ready automatically; Lee need not approve that state transition. Approval belongs to the exact execution scope at Approve and run. Moving or assigning the card does not grant that permission. Automatic gateway/background/ordinary dispatch must not consume unapproved Ready cards. Disabling dispatch in one profile is not proof that every applicable host path is disabled. Verify the actual live launch boundary before using general Ready-card execution.
+
+The accepted Issue #7/#6 document pilots used native sticky Blocked holds. Preserve those completed cards and evidence. They are historical implementation details, not a requirement to block Ready promotion in the intended reusable workflow. No live status or dispatcher setting is changed by this documentation update.
 
 ## Current operating procedure
 

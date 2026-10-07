@@ -10,7 +10,7 @@
 
 ## Workflow
 
-Select a GitHub issue, prepare one Triage card, draft and review its specification, explicitly release the approved scope, execute under the guard, return evidence to Review, and complete only after Lee accepts. This is the agreed target; reusable intake and guarded specification remain pending. Native To-do may auto-promote and is not an approval gate.
+Select a GitHub issue, prepare one Triage card, draft its specification, resolve dependencies in To-do and allow normal promotion to Ready. Ready waits for Lee's explicit execution approval through the guarded launch boundary. Execute only the exact approved scope, return evidence to Review, and complete only after Lee accepts. This is the agreed target; reusable intake, guarded specification and general Ready-card launch remain pending. Ready eligibility is not execution permission.
 
 See [GitHub to Hermes workflow](GITHUB_HERMES_WORKFLOW.md) for implementation boundaries, and [execution contract](JEEVES_EXECUTION_CONTRACT.md) for authority.
 
