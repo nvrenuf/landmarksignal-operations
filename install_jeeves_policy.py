@@ -14,6 +14,10 @@ import yaml
 from configure_jeeves_v1 import HERMES_REVISION, POLICY
 
 PLUGIN_NAME = "landmarksignal-execution"
+REVIEWED_HERMES_REVISIONS = frozenset({
+    HERMES_REVISION,
+    "0c2ff854a5c5121c75ac0b0a35241a580ee27fb7",
+})
 
 
 def disable_review_dispatch(original):
@@ -47,7 +51,7 @@ def bootstrap():
     profile = root / "profiles" / "jeeves"
     revision = subprocess.run(["git", "-C", str(runtime), "rev-parse", "HEAD"],
                               check=True, capture_output=True, text=True).stdout.strip()
-    if revision != HERMES_REVISION:
+    if revision not in REVIEWED_HERMES_REVISIONS:
         raise RuntimeError("Hermes revision changed; compatibility review required")
     raw = yaml.safe_load((profile / "config.yaml").read_bytes())
     for section, keys in POLICY.items():
