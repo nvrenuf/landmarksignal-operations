@@ -37,7 +37,6 @@ def snapshot(conn):
 def make_agent():
     from hermes_cli.config import load_config
     from hermes_cli.runtime_provider import resolve_runtime_provider
-    from hermes_constants import resolve_reasoning_config
     from run_agent import AIAgent
     cfg = load_config()
     model = cfg.get("model", {}).get("default")
@@ -52,10 +51,11 @@ def make_agent():
     agent = AIAgent(
         model=model, api_key=runtime.get("api_key"), base_url=runtime.get("base_url"),
         provider=runtime.get("provider"), requested_provider=runtime.get("requested_provider"),
-        api_mode=runtime.get("api_mode"), max_iterations=3, run_budget_seconds=120,
+        api_mode=runtime.get("api_mode"), max_iterations=1, run_budget_seconds=120,
+        max_tokens=1800,
         enabled_toolsets=[], disabled_toolsets=["all"], quiet_mode=True,
         skip_context_files=True, skip_memory=True, skip_background_review=True,
-        fallback_model=None, reasoning_config=resolve_reasoning_config(cfg, model),
+        fallback_model=None, reasoning_config={"enabled": False, "effort": "none"},
         ephemeral_system_prompt=("You are Jeeves drafting documentation for " + ISSUE_URL
                                  + ". No tools, children, infrastructure access or completion authority."
                                  + " Return the Markdown document only, without code fences."),
@@ -132,27 +132,37 @@ def main(dashboard_approval=None):
                 print("RUNNING: Jeeves is drafting the document (120-second model-run budget)", flush=True)
                 agent, model = make_agent()
                 try:
-                    prompt = task.body + "\n\nThis run: task " + TASK_ID + ", run " + str(task.current_run_id) + ", mode " + results["execution_mode"] + ".\n\nReviewed facts for the draft:\n" + (
-                        "Produce a concise Markdown document, at most 900 words. Include a nine-row mapping table in the given order. "
-                        "Do not invent native states or commands. Idea/Defined/Sprint Ready are GitHub planning stages, not dispatch authority. "
-                        "Hermes triage is specification intake; todo waits for dependencies or assignment; ready is eligible waiting work; "
-                        "running means claimed work; review is human-review handoff; blocked waits for intervention; scheduled waits for time; "
-                        "done follows human acceptance; archived preserves inactive records. "
-                        "Validation is checks/evidence, not a renamed native state. "
-                        "Manual orchestration disables automatic decomposition only, not worker dispatch. "
-                        "A native manual hold requires a blocked event as well as blocked status. "
-                        "The approved foreground route owns a Windows mutex through its actual agent lifetime and cleanup. "
-                        "This draft is one manually launched local Jeeves no-tools run; no general-purpose worker or child is deployed. "
-                        "Ordinary native dashboard dispatch, full automatic GitHub handoff, old-session policy activation and startup recovery remain unverified. "
-                        "Project statuses do not enforce permissions. Include exact issue URL, task/run IDs, scoped workspace, approved deliverable, "
-                        "separate child approval when applicable, evidence/artifact handoff, and Lee's human review before completion/merge. "
-                        "Explicitly label intended rules versus verified foreground behavior. No instructions to nudge a dispatcher or bypass a guard."
+                    prompt = (
+                        "Write KANBAN_STATUS_MAPPING.md, 250-400 words. Return only the document.\n"
+                        "Issue: " + ISSUE_URL + "; task: " + TASK_ID + "; run: " + str(task.current_run_id) + ".\n"
+                        "One table: GitHub stage | Hermes interpretation. Use these nine rows in order:\n"
+                        "Idea | planning, no dispatch\nDefined | specified, no dispatch\n"
+                        "Sprint Ready | planned and dependency-checked, no dispatch\n"
+                        "Queued for Jeeves | human-approved handoff; blocked until manual release, then ready\n"
+                        "In Progress | running under owned guard\nValidation | evidence checks during the run, not a native state\n"
+                        "Human Review | review\nBlocked | blocked\nDone | done after human acceptance\n"
+                        "Then five short rules: GitHub status grants no permission; approval binds issue/task/workspace; "
+                        "one guarded task and separate child approval; save artifact/evidence to review; Lee accepts before done/merge.\n"
+                        "Verified: Issue 19 parent/child safety checks passed. This task has no tools or children. "
+                        "The runner holds the mutex through agent close. Native holds need a blocked event. "
+                        "Manual orchestration disables automatic decomposition only. "
+                        "Unverified: ordinary native dispatcher guard integration, automatic GitHub sync and startup recovery. "
+                        "Label intended mapping versus verified behavior. Do not invent commands, tests or deployments. "
+                        "Stop after the document; do not repeat sections."
                     )
                     reply = agent.run_conversation(prompt)
                     content = (reply.get("final_response") or "").strip()
+                    results.update(model=model, api_calls=reply.get("api_calls"), tools_exposed=0,
+                                   generation_limits={"max_tokens": 1800, "max_iterations": 1, "reasoning_effort": "none"},
+                                   model_completed=reply.get("completed"), response_characters=len(content),
+                                   missing_stages=[stage for stage in STAGES if stage not in content])
+                    if content:
+                        partial = workspace / "model-response.txt"
+                        with partial.open("x", encoding="utf-8") as stream:
+                            stream.write(content)
+                        results["model_response_path"] = str(partial)
                     if not reply.get("completed") or len(content) < 300 or any(stage not in content for stage in STAGES):
                         raise RuntimeError("Draft incomplete or missing required stages; no document published")
-                    results.update(model=model, api_calls=reply.get("api_calls"), tools_exposed=0)
                 finally:
                     agent.close()
                 if any(snapshot(conn).get(k) != v for k, v in original.items()):

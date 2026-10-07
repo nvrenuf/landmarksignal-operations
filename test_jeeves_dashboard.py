@@ -1,5 +1,6 @@
 """Launch boundary checks without a model, board mutation, or native worker."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -11,6 +12,7 @@ from unittest.mock import patch
 
 import yaml
 from install_jeeves_dashboard import enable_plugin
+import prepare_issue7_retry as retry
 
 
 class ConfigurationTests(unittest.TestCase):
@@ -35,6 +37,24 @@ class ConfigurationTests(unittest.TestCase):
     def test_disabled_plugin_is_not_overridden(self):
         with self.assertRaises(RuntimeError):
             enable_plugin(b"plugins: {disabled: [landmarksignal-launch]}\n")
+
+
+class RetryTests(unittest.TestCase):
+    def test_only_reviewed_failed_run_can_be_prepared(self):
+        body = "reviewed body"
+        card = {"id": retry.TASK, "status": "blocked", "idempotency_key": "landmarksignal-issue7-status-mapping-v1",
+                "assignee": None, "body": body}
+        digest = hashlib.sha256(body.encode()).hexdigest()
+        evidence = {"status": "INCOMPLETE", "kanban_task_id": retry.TASK, "kanban_run_id": 11,
+                    "issue_url": retry.ISSUE, "task_body_sha256": digest}
+        launch = {"state": "incomplete", "task_id": retry.TASK}
+        with patch.object(retry, "BODY_SHA", digest):
+            retry.validate_failure(card, evidence, launch)
+            for changes in ({"worker_pid": 123}, {"status": "running"}, {"id": "another-task"}):
+                with self.subTest(changes=changes), self.assertRaises(RuntimeError):
+                    retry.validate_failure({**card, **changes}, evidence, launch)
+            with self.assertRaises(RuntimeError):
+                retry.validate_failure(card, {**evidence, "kanban_run_id": 12}, launch)
 
 
 class LaunchTests(unittest.TestCase):
