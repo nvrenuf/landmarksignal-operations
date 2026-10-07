@@ -15,14 +15,14 @@
     var e = R.useState(""), doc = e[0], setDoc = e[1];
     var f = R.useState(window.location.href), location = f[0], setLocation = f[1];
     var url = new URL(location), visible = url.searchParams.get("profile") === "jeeves";
-    var onPage = url.pathname === "/kanban" || url.pathname === "/jeeves-launch";
+    var onPage = url.pathname === "/jeeves-launch";
     R.useEffect(function () {
       var alive = true;
       function refresh() {
         if (!alive) return;
         setLocation(window.location.href);
         var u = new URL(window.location.href);
-        if (u.searchParams.get("profile") !== "jeeves" || !["/kanban", "/jeeves-launch"].includes(u.pathname)) return;
+        if (u.searchParams.get("profile") !== "jeeves" || u.pathname !== "/jeeves-launch") return;
         api("/status", undefined, selected).then(function (s) { if (alive) { setData(s); setError(""); } })
           .catch(function (err) { if (alive) setError(String(err.message || err)); });
       }
@@ -59,8 +59,8 @@
       h("strong", null, "Jeeves · Approved document tasks"),
       h("p", null, h("label", null, "Task ", h("select", {value: selected, onChange: changeTask, disabled: busy},
         choices.map(function (task) { return h("option", {key: task.selector, value: task.selector}, "Issue #" + task.issue_number + ": " + task.title); })))),
-      h("p", null, "Approve one document draft using the existing local Jeeves model. No tools or children. The result goes to Review."),
-      h("p", null, data ? "Card: " + data.card_status + " · Run: " + data.launch_state : "Checking the existing card…"),
+      h("p", null, data && data.card_status === "done" ? "This document task is complete. Its document remains available below." : "Approve one document draft using the existing local Jeeves model. No tools or children. The result goes to Review."),
+      h("p", null, data ? (data.card_status === "done" ? "Completed" : "Card: " + data.card_status + " · Run: " + data.launch_state) : "Checking the existing card…"),
       error ? h("p", {role: "alert", style: {color: "#b84646"}}, error) : null,
       data ? h("details", null, h("summary", null, "Review exact task scope"), h("pre", {style: {whiteSpace: "pre-wrap"}}, data.scope)) : null,
       data && data.can_launch ? h("div", null,
@@ -76,14 +76,4 @@
       data ? h("small", null, "Workspace: " + data.workspace) : null);
   }
   registry.register("landmarksignal-launch", Panel);
-  function KanbanPanel() {
-    var state = R.useState(window.location.href);
-    R.useEffect(function () {
-      var timer = window.setInterval(function () { state[1](window.location.href); }, 1000);
-      return function () { window.clearInterval(timer); };
-    }, []);
-    return new URL(state[0]).pathname === "/kanban" ? h(Panel) : null;
-  }
-  // Runtime slots.ts takes (plugin, slot, component).
-  registry.registerSlot("landmarksignal-launch", "pre-main", KanbanPanel);
 })();
