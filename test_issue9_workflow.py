@@ -11,7 +11,10 @@ from types import SimpleNamespace
 if os.name == 'nt':
     sys.path.insert(0,str(Path(os.environ['LOCALAPPDATA'])/'hermes/hermes-agent'))
     import hermes_bootstrap
-sys.path.insert(0,str(Path(__file__).parent/'issue9'))
+# Hermes's managed runpy relaunch omits the script directory. Restore both
+# companion locations after bootstrap, not before it.
+_source = Path(__file__).resolve().parent
+sys.path[:0] = [str(_source/'issue9'), str(_source)]
 import handoff_logic as handoff
 import sprint_assignment as sprint
 import status_sync as sync

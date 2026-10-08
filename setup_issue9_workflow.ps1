@@ -39,6 +39,8 @@ try {
         $ancestorId = $ancestor.ParentProcessId
     }
     $processCreated = $process.CreationDate
+    & $python -B (Join-Path $PSScriptRoot 'test_issue9_entrypoint.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Isolated launch regression failed. Nothing installed.' }
     & $python -B (Join-Path $PSScriptRoot 'test_issue9_workflow.py')
     if ($LASTEXITCODE -ne 0) { throw 'Native tool checks failed. Nothing installed.' }
     Write-Host 'Windows will request administrator approval for the protected policy update only.'
