@@ -19,6 +19,8 @@ The visible LandmarkSignal Kanban was cleared by archiving 16 existing cards. Al
 
 GitHub Project [#3](https://github.com/nvrenuf/projects/3) holds priorities, Execution Order, Sprint, approvals and published evidence. The existing `landmarksignal` Hermes board records local execution. Ready can launch native work; worker output goes to Review; Lee accepts through Complete. Return evidence through the dashboard button. GitHub closure is a separate human decision.
 
+The Jeeves launcher also supports the explicitly selected [Hermes Optimization Project #4](https://github.com/users/nvrenuf/projects/4). Select the source before import or result return; both projects use the existing launcher and board. See the [workflow and focused installation instructions](docs/GITHUB_HERMES_WORKFLOW.md) and [Issue #33 verification](docs/ISSUE33_VERIFICATION.md).
+
 This repository contains maintained integration source and documentation. It is not the installed upstream Hermes runtime, a backup of the entire Hermes folder, or proof that uncommitted laptop files were pushed. Do not commit credentials, live databases or model files.
 
 Historical pilots and repair reports remain as evidence. Use the current documents above for operation; do not reinstall old repair scripts merely because they remain in the repository.

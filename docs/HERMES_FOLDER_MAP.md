@@ -28,6 +28,8 @@ This maps the existing installation, not a new folder structure. `%LOCALAPPDATA%
 
 ## Source to installed copies
 
+Issue #33's focused launcher payload is mapped by [github_projects_assets.json](../github_projects_assets.json): the existing API and JavaScript plus `github_queue_intake.py`, `github_handoff_results.py` and the approved source catalog `github_projects.py` in `dashboard\runner`. Use [setup_github_projects.ps1](../setup_github_projects.ps1) for this update, not the older workflow or Operations skill installers. No configuration, execution-policy or native runtime files belong to this payload. See the [workflow](GITHUB_HERMES_WORKFLOW.md#focused-launcher-installation-and-rollback) for install and rollback details.
+
 [issue9_workflow_assets.json](../issue9_workflow_assets.json) is the exact integration payload map. `github_queue_intake.py` and `github_handoff_results.py` are copied to the launch plugin's `dashboard\runner`. `landmarksignal_review_policy.py`, `issue9_review_plugin_init.py` and `issue9_review_plugin.yaml` supply both execution-policy plugins. The four `issue9/` prototype modules were installed into the original Issue #9 workspace; they are not all dispatcher interceptors.
 
 The installation used the pinned [setup_issue9_workflow.ps1](../setup_issue9_workflow.ps1), with UAC only for protected file maintenance. Normal runtime accounts retain read/execute access to installed helpers. Do not broaden ACLs or run Hermes elevated to solve a documentation mismatch. The current laptop installation is already verified; no reinstall is required for this documentation update.

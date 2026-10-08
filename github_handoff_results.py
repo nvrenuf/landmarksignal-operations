@@ -1,4 +1,4 @@
-"""Explicit native Kanban result return to GitHub Project #3 for human review."""
+"""Explicit native Kanban result return to the verified originating project."""
 from contextlib import closing
 import hashlib
 import json
@@ -6,11 +6,13 @@ from pathlib import Path
 import re
 import sqlite3
 from github_queue_intake import gh, digest
+from github_projects import DEFAULT_PROJECT, get_project, validate_source, source_selector, source_key, ISSUE_URL
 
-URL=re.compile(r'^https://github\.com/(nvrenuf/[A-Za-z0-9_.-]+)/issues/([1-9][0-9]*)$')
+URL=ISSUE_URL
 
 
-def inspect_results(root):
+def inspect_results(root, selector=DEFAULT_PROJECT):
+    get_project(selector)
     database=root/'kanban/boards/landmarksignal/kanban.db'
     work_root=(root/'landmarksignal-v1/work/github-intake').resolve()
     with closing(sqlite3.connect(database.resolve().as_uri()+'?mode=ro',uri=True)) as conn:
@@ -26,10 +28,15 @@ def inspect_results(root):
             source_path=workspace/'github-source.json'
             if not source_path.is_file(): continue
             source=json.loads(source_path.read_text(encoding='utf-8-sig'))
-            issue=source['issue'];url=issue['url']
-            if not URL.fullmatch(url) or source.get('project_owner')!='nvrenuf' or source.get('project_number')!=3: continue
             # Export the original intake root, not every decomposed prerequisite.
-            if not (card.get('idempotency_key','') or '').startswith('github-project3:'): continue
+            card_key=card.get('idempotency_key') or ''
+            if not card_key.startswith(('github-project3:', 'github-project:')): continue
+            origin=source_selector(source)
+            validate_source(source, origin)
+            if card_key != source_key(source):
+                raise RuntimeError('Card/source identity differs')
+            if origin != selector: continue
+            issue=source['issue'];url=issue['url']
             run=conn.execute('SELECT * FROM task_runs WHERE task_id=? ORDER BY id DESC LIMIT 1',(card['id'],)).fetchone()
             if run is None: continue
             artifacts=[]
@@ -37,6 +44,8 @@ def inspect_results(root):
                 if file.is_symlink() or not file.is_file() or file.suffix not in ('.py','.md'): continue
                 artifacts.append({'name':file.name,'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'size':file.stat().st_size})
             r={'task_id':card['id'],'title':card['title'],'status':card['status'],'issue_url':url,
+               'issue_id':issue['id'],'project_selector':selector,
+               'source_sha256':digest(source),
                'project_id':source['project_id'],'project_item_id':source['project_item_id'],
                'board':'landmarksignal','workspace':str(workspace),'run':dict(run),'artifacts':artifacts,
                'proposed_status':'Blocked' if card['status']=='blocked' else 'Human Review',
@@ -51,20 +60,30 @@ def graphql(reader,query,variables):
     return value['data']
 
 
-def return_result(root, task_id, snapshot_sha256, reader=gh):
-    rows=[r for r in inspect_results(root) if r['task_id']==task_id]
+def return_result(root, task_id, snapshot_sha256, reader=gh, selector=DEFAULT_PROJECT):
+    approved=get_project(selector)
+    rows=[r for r in inspect_results(root, selector) if r['task_id']==task_id]
     if len(rows)!=1 or rows[0]['snapshot_sha256']!=snapshot_sha256:
         raise RuntimeError('Result changed; refresh before returning it')
     record=rows[0]
     if reader(['api','user','--jq','.login']).strip()!='nvrenuf': raise RuntimeError('GitHub account must be nvrenuf')
     match=URL.fullmatch(record['issue_url']);repo,number=match.groups()
     live=json.loads(reader(['api',f'repos/{repo}/issues/{number}']))
+    if (live.get('node_id') != record['issue_id'] or live.get('html_url') != record['issue_url']
+            or live.get('number') != int(number) or live.get('pull_request')):
+        raise RuntimeError('Live repository/issue identity differs')
     if live.get('state')!='open': raise RuntimeError('Issue is closed; review it in GitHub before returning results')
-    query='''query($project:ID!,$item:ID!){project:node(id:$project){... on ProjectV2{id number owner{... on User{login}} fields(first:100){pageInfo{hasNextPage} nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}} item:node(id:$item){... on ProjectV2Item{project{id} content{... on Issue{url}}}}}'''
+    query='''query($project:ID!,$item:ID!){project:node(id:$project){... on ProjectV2{id number owner{... on User{login}} fields(first:100){pageInfo{hasNextPage} nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}} item:node(id:$item){... on ProjectV2Item{id isArchived project{id} content{... on Issue{id url number repository{nameWithOwner}}}}}}'''
     data=graphql(reader,query,{'project':record['project_id'],'item':record['project_item_id']})
     project,item=data['project'],data['item']
-    if (project['number']!=3 or project['owner'].get('login')!='nvrenuf'
-        or item['project']['id']!=project['id'] or item['content']['url']!=record['issue_url']):
+    if (not project or not item or project.get('id')!=approved['id']
+        or project.get('number')!=approved['number'] or (project.get('owner') or {}).get('login')!=approved['owner']
+        or item.get('id')!=record['project_item_id'] or item.get('isArchived') is not False
+        or (item.get('project') or {}).get('id')!=project['id']
+        or (item.get('content') or {}).get('url')!=record['issue_url']
+        or item['content'].get('id')!=record['issue_id']
+        or item['content'].get('number')!=int(number)
+        or (item['content'].get('repository') or {}).get('nameWithOwner')!=repo):
         raise RuntimeError('Project/item/issue binding differs')
     if project['fields']['pageInfo']['hasNextPage']: raise RuntimeError('Project fields truncated')
     fields=[f for f in project['fields']['nodes'] if f.get('name')=='Status']

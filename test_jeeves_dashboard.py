@@ -1,5 +1,6 @@
 """Launch boundary checks without a model, board mutation, or native worker."""
 import importlib.util
+from contextlib import closing
 import hashlib
 import json
 from pathlib import Path
@@ -80,7 +81,7 @@ class LaunchTests(unittest.TestCase):
         self.work = self.root / "work"
         self.work.mkdir()
         self.board = self.root / "board.db"
-        with sqlite3.connect(self.board) as conn:
+        with closing(sqlite3.connect(self.board)) as conn, conn:
             conn.execute("CREATE TABLE tasks(id TEXT, idempotency_key TEXT, body TEXT, workspace_kind TEXT, workspace_path TEXT, status TEXT, assignee TEXT, worker_pid INTEGER, claim_lock TEXT)")
             conn.execute("INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?,?)", (self.api.TASK, self.api.KEY, self.api.ISSUE,
                          "dir", str(self.work), "blocked", None, None, None))
@@ -88,7 +89,7 @@ class LaunchTests(unittest.TestCase):
         self.paths.start()
         self.gate = patch.object(self.api, "require_jeeves")
         self.gate.start()
-        self.request = SimpleNamespace(headers={"origin": "http://127.0.0.1:9119"}, base_url="http://127.0.0.1:9119/")
+        self.request = SimpleNamespace(headers={"origin": "http://127.0.0.1:9119"}, base_url="http://127.0.0.1:9119/", query_params={})
 
     def tearDown(self):
         self.gate.stop()
@@ -115,7 +116,7 @@ class LaunchTests(unittest.TestCase):
 
     def test_changed_card_and_cross_origin_launch_cannot_spawn(self):
         approval = self.approval()
-        with sqlite3.connect(self.board) as conn:
+        with closing(sqlite3.connect(self.board)) as conn, conn:
             conn.execute("UPDATE tasks SET body=body||' changed'")
         with patch.object(self.api.subprocess, "Popen") as spawn:
             with self.assertRaises(Exception): self.api.start(self.request, approval)
@@ -130,7 +131,7 @@ class LaunchTests(unittest.TestCase):
             with self.assertRaises(Exception): self.api.start(self.request, self.approval())
             spawn.assert_not_called()
         (self.work / "dashboard-launch.json").unlink()
-        with sqlite3.connect(self.board) as conn:
+        with closing(sqlite3.connect(self.board)) as conn, conn:
             conn.execute("UPDATE tasks SET status='running'")
         with patch.object(self.api.subprocess, "Popen") as spawn:
             with self.assertRaises(Exception): self.api.start(self.request, self.approval())
