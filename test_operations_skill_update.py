@@ -58,6 +58,14 @@ class SkillUpdateTests(unittest.TestCase):
             self.assertEqual((backup / "skill-before" / "SKILL.md").read_bytes(), previous)
             self.assertEqual((target / "SKILL.md").read_bytes(), new["SKILL.md"])
 
+    def test_declared_payload_and_reviewed_observed_revision(self):
+        source = Path(__file__).resolve().parent
+        manifest = json.loads((source / "operations_skill_update_manifest.json").read_text())
+        for name in update.FILES:
+            payload = (source / "skills" / "landmarksignal-operations" / name).read_bytes().replace(b"\r\n", b"\n")
+            self.assertEqual(update.hashlib.sha256(payload).hexdigest(), manifest["new_sha256"][name])
+        self.assertIn("0db8857aa77dbe9ef15ebc72eb65473a8b6a44efc40045cd808f27a175cff5d9", manifest["accepted_previous_normalized_sha256"]["SKILL.md"])
+
     def test_unknown_local_edit_stops_before_any_update(self):
         with tempfile.TemporaryDirectory() as directory:
             source, target, recovery, old, new = self.fixture(directory)

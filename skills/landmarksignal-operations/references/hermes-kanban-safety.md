@@ -13,3 +13,7 @@ Keep original requirements, source identity and actual task/run/profile/workspac
 Use native blocker reporting for actual blockers and Review for deliverables. Report tests actually run, not demonstrations as live integration. Never call Complete as a way to unblock, retry or request approval.
 
 The Issue #19 foreground guard is a separate participating route; its ownership/child checks do not establish universal native dispatcher enforcement. Do not restore its obsolete blanket tool gate.
+
+## Native worker terminal protocol
+
+When genuinely waiting on Lee's input or another blocker, call the permitted `kanban_block` with a clear reason before ending the worker run. For deliverables awaiting acceptance, call `kanban_request_review`. Merely asking a question and exiting cleanly does not record the native lifecycle outcome and can cause protocol failures/retries. Do not use `kanban_complete` to satisfy the worker protocol or recreate the obsolete foreground gate.

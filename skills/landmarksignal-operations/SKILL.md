@@ -13,6 +13,8 @@ Follow the current repository `docs/GITHUB_HERMES_WORKFLOW.md`, `docs/JEEVES_EXE
 |---|---|
 | Import queued issues and native Kanban lifecycle | `references/hermes-kanban.md` |
 | Tools, scope, dispatch and review boundaries | `references/hermes-kanban-safety.md` |
+| Read-only board inspection (retained supplemental reference) | `references/kanban-inspection.md` |
+| Workspace inventory (retained supplemental reference) | `references/workspace-inventory.md` |
 | Foreground guard and its evidence limits | `references/execution-guard-v1.md` |
 | Acceptance evidence and remaining gaps | `references/acceptance-test.md` |
 
@@ -29,3 +31,11 @@ Preserve Priority, Execution Order, Sprint and original requirements. Obtain exp
 Preserve existing DGX production services. Do not restart/rebind/replace services, change models, deploy the planned roster or broaden infrastructure access as part of a handoff.
 
 Distinguish installed capabilities, tests, live evidence and unresolved requirements. Issue #9 remains open: dispatch approval enforcement is not implemented, and live Blocked-result return is not yet demonstrated. Never turn historical readiness claims into acceptance.
+
+## Read-only inspection and document review
+
+During inspection, read cards and exact workspace files without changing cards, launching workers or completing tasks. Distinguish connected workflow, local-only code and untested claims. If permitted by scope, inspect git status/diff/log before reporting changes. A clean working tree does not prove that nothing was committed, pushed or changed on GitHub; verify those claims separately.
+
+For the operator quickstart, read `WORKFLOW_QUICKSTART.md` from the card's exact workspace. Keep documentation consistent with the current seven-step workflow: Project #3 planning, explicit queued batch import, native preparation and Ready eligibility, worker Review, Lee's dashboard Complete, explicit evidence return without issue closure, and Lee's Priority/Execution Order/Sprint and merge/deploy authority. Do not substitute a stale chat working directory or claim automatic synchronization or attachments. Preserve task-specific length and deliverable requirements.
+
+Retain the supplemental inspection/inventory references and other unrelated resources. Their contents were not part of this five-file reconciliation. If a supplemental reference conflicts with this skill or current repository policy, follow the current policy and report the conflict.
