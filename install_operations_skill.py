@@ -23,6 +23,9 @@ def install(source, target, recovery):
     manifest = json.loads((source / "operations_skill_update_manifest.json").read_text())
     old = manifest["inspected_old_normalized_sha256"]
     new = manifest["new_sha256"]
+    accepted = manifest.get("accepted_previous_normalized_sha256", {k: [v] for k, v in old.items()})
+    if set(accepted) != FILES or any(not isinstance(v, list) or not v or any(not isinstance(h, str) or len(h) != 64 for h in v) for v in accepted.values()):
+        raise RuntimeError("Invalid previous-version checksums")
     if set(old) != FILES or set(new) != FILES:
         raise RuntimeError("Update manifest differs from the reviewed five-file scope")
     payload = source / "skills" / "landmarksignal-operations"
@@ -39,7 +42,7 @@ def install(source, target, recovery):
         current = dst.read_bytes()
         if current == content:
             continue
-        if normalized(current) != old[relative]:
+        if normalized(current) not in accepted[relative]:
             raise RuntimeError("Installed skill differs from the inspected snapshot: " + relative)
         replacements[relative], originals[relative] = content, current
     if not replacements:
@@ -82,7 +85,7 @@ def install(source, target, recovery):
     print("Generic GitHub skills, configuration, board and evidence untouched.")
     print("No model call, card creation, dispatch, authorization or infrastructure change.")
     print("Start a fresh Jeeves conversation to avoid old skill text in chat context.")
-    print("Reusable guarded GitHub intake/specification is NOT installed by this update.")
+    print("Instructions match the merged native workflow; runtime enforcement is unchanged.")
     return backup
 
 

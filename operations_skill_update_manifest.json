@@ -8,10 +8,34 @@
     "references/acceptance-test.md": "c62cbb3f584c741551d7de0ab3f6ecf773b950185e723f93b9eeb99845605253"
   },
   "new_sha256": {
-    "SKILL.md": "7c8795d8e431210f2b128eb113a253b9375eb5fe23dd696d6b72ea468b5116f0",
-    "references/execution-guard-v1.md": "498fb27a42a3972df501925f5e55ff55247ede44cb49c2f6bdf5494d723eb67b",
-    "references/acceptance-test.md": "d332394b268311bb6a85888cb2d650a6cc85082ee3d081a603b0fbd000a8681f",
-    "references/hermes-kanban.md": "6794bc17d50dbc5f64eab570a8aae29a2f661f8b7141e9c613b82f645e3c3e8f",
-    "references/hermes-kanban-safety.md": "8054c551677b1d262f79fa2d4b6a14e1e931bdeb1d2beb0a2ea10a35594d2626"
+    "SKILL.md": "71c9bd5ddcae54186a018572d8d157ad03f9fe6b9f1f43156f86f9acead2375c",
+    "references/hermes-kanban.md": "f4712032189af05a70e6f8169b5c2d0222394ff6bd65157565e1e0966d411d91",
+    "references/hermes-kanban-safety.md": "51a1e61edcd93d5f2c04d2d3f751310fc4f4f63f50f46907bbe00f0cb4e515f9",
+    "references/execution-guard-v1.md": "ec4fc36e41ad049259bc92c2004a009ee45dd20eaec08df87d2e59ffe80743bf",
+    "references/acceptance-test.md": "71999fb745e4d747287bfd549df7287a301df3ffa3434ef3ea67b9e6f3c379a8"
+  },
+  "accepted_previous_normalized_sha256": {
+    "SKILL.md": [
+      "8ed78a103e8daeae0a66b769db6d518c3152896ab539f36594bfc50fcc648841",
+      "78e8aedb4fac00a27a760398afd6c185ecc9e0e3c04e53c084023ac4ed30f68c",
+      "0db8857aa77dbe9ef15ebc72eb65473a8b6a44efc40045cd808f27a175cff5d9"
+    ],
+    "references/hermes-kanban.md": [
+      "39ea65f7c49daf40bea379d3886d65bc9b1c51905fa33e6f6b2d62a39bf1f9f4",
+      "2a40e1240d22859e3bf335c6a93b9f20ad259fdd5cdb24cd824770adb4e17658"
+    ],
+    "references/hermes-kanban-safety.md": [
+      "b83a596227558de51b1138556062e7da06925761fb562bccada356595214bc14",
+      "a260fd709956f4b373101418a23307eac137130c97beae03f51ae7d82a153127",
+      "0735f88bd6848f9b9f86aaa1c305f865038cf4db15b244e647af7d801897e218"
+    ],
+    "references/execution-guard-v1.md": [
+      "60aa584a37cc83b6579a76f3af11f101d14a4c75c16db87ac541f25cc27f8987",
+      "dfd97d25f97b5a9d91be3ddbc0de933ef339ce35603b05007409c2a6215f9843"
+    ],
+    "references/acceptance-test.md": [
+      "c62cbb3f584c741551d7de0ab3f6ecf773b950185e723f93b9eeb99845605253",
+      "bb1585e2258b0fbb4690133c488e1a2eb94d439723e294e03fc5f2cc913eac0a"
+    ]
   }
 }
