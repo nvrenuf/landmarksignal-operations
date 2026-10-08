@@ -20,14 +20,14 @@
   {
     "source": "github_handoff_results.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_handoff_results.py",
-    "old_sha256": "51f63b99b2da036684ae9802d04c8e1bb1559097ee54e5011d366fcc4012996c",
-    "new_sha256": "fd6309c8fd4781c77fafa83a746852db66d0c18d40d0d3c5f118ba291fa533cf"
+    "old_sha256": "fd6309c8fd4781c77fafa83a746852db66d0c18d40d0d3c5f118ba291fa533cf",
+    "new_sha256": "2d8a7742b1cff82f4b1be23a55162161e7f303e70de4537b5b78e7c041522478"
   },
   {
     "source": "github_projects.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_projects.py",
-    "old_sha256": "2c6f1ca5adaa0aa5b9115351d6f32ad24934d00f3d9c9338257e9f3dd8c7db54",
-    "new_sha256": "dda76ac1da3f3d978f778d81d367cfd3aa145a5e26fc7269019322a727142863"
+    "old_sha256": "dda76ac1da3f3d978f778d81d367cfd3aa145a5e26fc7269019322a727142863",
+    "new_sha256": "e194e0c5e9382df2b7a770987d6abc1cceb5ff2057016ccdaad5e465023d2a06"
   },
   {
     "source": "github_acceptance.py",

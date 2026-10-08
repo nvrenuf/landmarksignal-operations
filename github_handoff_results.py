@@ -58,6 +58,9 @@ def inspect_results(root, selector=DEFAULT_PROJECT):
                                    (card['id'],)).fetchone()
                 if event:
                     accepted=json.loads(event[0]); saved=accepted.get('evidence_record') or {}
+                    if (accepted.get('run_id') != run['id']
+                            or (saved.get('run') or {}).get('id') != accepted.get('run_id')):
+                        raise RuntimeError('Latest task run differs from human acceptance; inspect the task event before retrying')
                     if (saved.get('task_id') != card['id'] or saved.get('project_selector') != selector
                             or saved.get('source_sha256') != r['source_sha256']
                             or saved.get('artifacts') != artifacts):
@@ -96,10 +99,11 @@ def return_result(root, task_id, snapshot_sha256, reader=gh, selector=DEFAULT_PR
             or live.get('number') != int(number) or live.get('pull_request')):
         raise RuntimeError('Live repository/issue identity differs')
     if live.get('state')!='open': raise RuntimeError('Issue is closed; review it in GitHub before returning results')
-    query='''query($project:ID!,$item:ID!){project:node(id:$project){... on ProjectV2{id number owner{... on User{login}} fields(first:100){pageInfo{hasNextPage} nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}} item:node(id:$item){... on ProjectV2Item{id isArchived project{id} content{... on Issue{id url number repository{nameWithOwner}}}}}}'''
+    query='''query($project:ID!,$item:ID!){project:node(id:$project){... on ProjectV2{id number closed owner{... on User{login}} fields(first:100){pageInfo{hasNextPage} nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}} item:node(id:$item){... on ProjectV2Item{id isArchived project{id} content{... on Issue{id url number repository{nameWithOwner}}}}}}'''
     data=graphql(reader,query,{'project':record['project_id'],'item':record['project_item_id']})
     project,item=data['project'],data['item']
     if (not project or not item or project.get('id')!=approved['id']
+        or project.get('closed') is not False
         or project.get('number')!=approved['number'] or (project.get('owner') or {}).get('login')!=approved['owner']
         or item.get('id')!=record['project_item_id'] or item.get('isArchived') is not False
         or (item.get('project') or {}).get('id')!=project['id']

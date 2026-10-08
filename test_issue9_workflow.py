@@ -101,7 +101,7 @@ class WorkflowTests(unittest.TestCase):
                     q=payload['query']
                     if q.startswith('mutation'):return json.dumps({'data':{'updateProjectV2ItemFieldValue':{'projectV2Item':{'id':'PI9'}}}})
                     if 'fieldValueByName' in q:return json.dumps({'data':{'node':{'fieldValueByName':{'name':'Human Review'}}}})
-                    return json.dumps({'data':{'project':{'id':project_id,'number':3,'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':'REVIEW','name':'Human Review'}]}]}},'item':{'id':source['project_item_id'],'isArchived':False,'project':{'id':project_id},'content':source['issue']}}})
+                    return json.dumps({'data':{'project':{'id':project_id,'number':3,'closed':False,'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':'REVIEW','name':'Human Review'}]}]}},'item':{'id':source['project_item_id'],'isArchived':False,'project':{'id':project_id},'content':source['issue']}}})
                 if args[1].endswith('/comments'):
                     if '--method' in args:comments.append(payload);return '{}'
                     return json.dumps([comments])

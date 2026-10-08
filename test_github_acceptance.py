@@ -177,6 +177,23 @@ class AcceptanceTests(unittest.TestCase):
     def test_lost_comment_response_does_not_duplicate_evidence(self):
         self._partial_then_retry('comments_post_after')
 
+    def test_newer_task_run_blocks_retry_before_github_write(self):
+        snapshot = self.snapshot()
+        self.fail_once = 'comments'
+        with self.assertRaisesRegex(RuntimeError, 'Retry Sync completion'):
+            self.accept(snapshot=snapshot)
+        with closing(sqlite3.connect(self.db)) as conn, conn:
+            self.assertEqual(conn.execute("SELECT count(*) FROM task_events WHERE kind='human_accepted'").fetchone()[0],1)
+            conn.execute('INSERT INTO task_runs VALUES (?,?,?,?,?)',
+                         (30, 'root47', 'jeeves', 'review', 'Newer unaccepted run'))
+        self.calls.clear()
+        with self.assertRaisesRegex(RuntimeError, 'Latest task run differs from human acceptance'):
+            self.accept(snapshot=snapshot)
+        self.assertEqual(self.calls, [])
+        self.assertEqual(self.comment, [])
+        self.assertEqual(self.project_status, 'Human Review')
+        self.assertEqual(self.issue_state, 'open')
+
     def test_done_workflow_closes_issue_without_second_close(self):
         self.auto_close_on_done = True
         self.accept(requirement='not_required', pr_url='')

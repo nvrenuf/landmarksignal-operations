@@ -13,6 +13,7 @@ PROJECTS = {
                   'title': 'Hermes Optimization'},
 }
 _discovered = {}
+_catalog_loaded = False
 DEFAULT_PROJECT = 'nvrenuf/3'
 ISSUE_URL = re.compile(r'^https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/issues/([1-9][0-9]*)$')
 DISCOVERY_QUERY = '''query($owner:String!,$cursor:String){user(login:$owner){login
@@ -38,6 +39,7 @@ def gh(arguments, payload=None):
 
 def discover_projects(reader=gh):
     """Read every project page. Publish a new catalog only after complete validation."""
+    global _catalog_loaded
     if reader(['api', 'user', '--jq', '.login']).strip() != OWNER:
         raise RuntimeError('GitHub must authenticate as nvrenuf. Run gh auth status, then Refresh projects.')
     found, ids, seen_cursors, cursor = {}, set(), set(), None
@@ -82,6 +84,7 @@ def discover_projects(reader=gh):
         if page.get('hasNextPage') is False:
             _discovered.clear()
             _discovered.update(found)
+            _catalog_loaded = True
             return sorted(found.values(), key=lambda p: (p['number'] not in (3, 4), p['number']))
         next_cursor = page.get('endCursor')
         if not next_cursor or next_cursor == cursor or next_cursor in seen_cursors:
@@ -94,7 +97,7 @@ def discover_projects(reader=gh):
 def get_project(selector=DEFAULT_PROJECT):
     if not isinstance(selector, str):
         raise RuntimeError('Unsupported GitHub source project')
-    project = _discovered.get(selector) or PROJECTS.get(selector)
+    project = _discovered.get(selector) if _catalog_loaded else (_discovered.get(selector) or PROJECTS.get(selector))
     if not project:
         raise RuntimeError('Project is not in the discovered catalog; Refresh projects and select an open nvrenuf project')
     return {**project, 'selector': selector,

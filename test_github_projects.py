@@ -33,7 +33,7 @@ def source(number=3, issue=1):
 
 class SelectionTests(unittest.TestCase):
     def test_discovery_paginates_open_owner_projects_and_reports_missing_status(self):
-        previous=projects._discovered.copy()
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
         cursors=[]
         def fixture(number, *, closed=False, options=projects.REQUIRED_STATUS):
             return {'id':projects.PROJECTS.get(f'nvrenuf/{number}',{}).get('id',f'PVT_{number}'),
@@ -57,12 +57,37 @@ class SelectionTests(unittest.TestCase):
                 projects.require_import_status(projects.get_project('nvrenuf/5'))
         finally:
             projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
+
+    def test_successful_catalog_excludes_static_projects_even_when_empty(self):
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        def reader(args,payload=None):
+            if args[1]=='user': return 'nvrenuf'
+            return json.dumps({'data':{'user':{'login':'nvrenuf','projectsV2':{
+                'nodes':self.nodes,'pageInfo':{'hasNextPage':False,'endCursor':None}}}}})
+        try:
+            self.nodes=[{'id':'PVT_5','number':5,'title':'Only open project','closed':False,
+                         'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},'nodes':[]}}]
+            self.assertEqual([p['selector'] for p in projects.discover_projects(reader)],['nvrenuf/5'])
+            self.assertEqual(projects.get_project('nvrenuf/5')['id'],'PVT_5')
+            for selector in ('nvrenuf/3','nvrenuf/4'):
+                with self.subTest(selector=selector),self.assertRaisesRegex(RuntimeError,'discovered catalog'):
+                    projects.get_project(selector)
+            self.nodes=[]
+            self.assertEqual(projects.discover_projects(reader),[])
+            for selector in ('nvrenuf/3','nvrenuf/4','nvrenuf/5'):
+                with self.subTest(empty=selector),self.assertRaisesRegex(RuntimeError,'discovered catalog'):
+                    projects.get_project(selector)
+        finally:
+            projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
 
     def test_discovery_failure_retains_last_good_catalog(self):
-        previous=projects._discovered.copy()
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
         try:
             projects._discovered.clear()
             projects._discovered['nvrenuf/5']={'owner':'nvrenuf','number':5,'id':'OLD','title':'Old'}
+            projects._catalog_loaded=True
             def stuck(args,payload=None):
                 if args[1]=='user':return 'nvrenuf'
                 return json.dumps({'data':{'user':{'login':'nvrenuf','projectsV2':{
@@ -70,10 +95,13 @@ class SelectionTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'pagination'):
                 projects.discover_projects(stuck)
             self.assertEqual(projects.get_project('nvrenuf/5')['id'],'OLD')
+            with self.assertRaisesRegex(RuntimeError,'discovered catalog'):
+                projects.get_project('nvrenuf/3')
             with self.assertRaisesRegex(RuntimeError,'authenticate as nvrenuf'):
                 projects.discover_projects(lambda *_:'wrong')
         finally:
             projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
 
     def test_unknown_source_refuses_before_read(self):
         for selector in ('nvrenuf/5','other/3','',None,3):
@@ -197,7 +225,7 @@ class ResultTests(unittest.TestCase):
                 self.assertEqual(payload['variables'],{'project':r['project_id'],'item':r['project_item_id'],'field':'STATUS','option':self.status})
                 return json.dumps({'data':{}})
             if 'fieldValueByName' in q:return json.dumps({'data':{'node':{'fieldValueByName':{'name':self.status}}}})
-            data={'project':{'id':r['project_id'],'number':self.number,'owner':{'login':'nvrenuf'},
+            data={'project':{'id':r['project_id'],'number':self.number,'closed':self.bad=='closed','owner':{'login':'nvrenuf'},
                 'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':self.status,'name':self.status}]}]}},
                 'item':{'id':r['project_item_id'],'isArchived':False,'project':{'id':r['project_id']},'content':copy.deepcopy(r['issue'])}}
             if self.bad=='item':data['item']['id']='wrong'
@@ -234,7 +262,7 @@ class ResultTests(unittest.TestCase):
     def test_remote_mismatches_reject_before_any_write(self):
         self.number=4;self.status='Human Review'
         row=returns.inspect_results(self.root,'nvrenuf/4')[0]
-        for self.bad in ('item','project','issue','repo','archived','rest'):
+        for self.bad in ('item','project','issue','repo','archived','closed','rest'):
             self.calls=[]
             with self.subTest(bad=self.bad),self.assertRaises(RuntimeError):
                 returns.return_result(self.root,'t4',row['snapshot_sha256'],self.reader,'nvrenuf/4')
