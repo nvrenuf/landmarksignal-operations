@@ -1,3 +1,5 @@
+> Historical native-tools transition. The current installed policy adds worker-to-Review enforcement described in [execution policy](KANBAN_EXECUTION_POLICY.md). Use [current workflow](GITHUB_HERMES_WORKFLOW.md); do not rerun this earlier installer over the combined workflow.
+
 # Native Jeeves project tools
 
 Lee authorized removing the custom foreground-only execution restriction so normal Hermes project work can use native tools. `setup_jeeves_native_tools.ps1` supersedes the read-boundary repair for this operating mode.

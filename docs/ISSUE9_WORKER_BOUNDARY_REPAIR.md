@@ -1,3 +1,5 @@
+> Historical read-boundary repair. Its restrictive foreground policy was subsequently replaced. Use [current execution contract](JEEVES_EXECUTION_CONTRACT.md) and [execution policy](KANBAN_EXECUTION_POLICY.md), not these earlier repair instructions.
+
 # Issue 9 native worker boundary repair
 
 The October 7 Windows report shows that the Jeeves foreground-only policy denied

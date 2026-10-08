@@ -1,27 +1,27 @@
-# Jeeves Execution Contract
+# Jeeves execution contract
 
-## Permitted within the approved route and scope
+## Ordinary native project work
 
-Read supplied approved work, propose a specification or subtask, report blockers, and return artifacts/evidence for human review. Coordinate execution only through a reviewed installed route that enforces the exact issue, task, workspace and approval. A role description is not a tool grant.
+Use the exact GitHub issue, named board, task/run identity and assigned workspace. Read the requirements, use tools needed within authorized scope, produce verifiable artifacts, report genuine blockers and submit output through `kanban_request_review`. Default/Jeeves ordinary project tools are available; the obsolete foreground-only tool gate is removed.
 
-Current accepted operational routes are bounded no-tools document calls. The acceptance route separately demonstrated synchronous parent/child approval checks. It does not authorize general product children, deployed workers or detached processes.
+Finish at Review. Do not call `kanban_complete` for LandmarkSignal work; Lee accepts through dashboard Complete. Do not claim success based on demo output, generated summaries or the mere existence of code. Return the actual file paths and meaningful verification performed.
 
-## Explicit scoped Lee authorization required
+## Authority and boundaries
 
-- Importing selected work or making task mutations beyond an already authorized route.
-- Drafting through a model route; drafting approval does not authorize implementation.
-- Executing the exact reviewed task, including tool/workspace access.
-- Creating child cards, decomposing work, assigning/spawning workers or executing children. Parent approval never supplies child approval.
-- Expanding scope, changing priority/strategic sequence, Execution Order or Sprint.
-- Accepting results, marking work Done, closing GitHub issues, merging changes or deploying.
-- Deleting data/repositories, incurring cost, changing security boundaries, credentials or infrastructure, or interrupting Community Capital services.
+Lee controls scope, Priority, Execution Order, Sprint, acceptance and GitHub closure. Obtain applicable explicit authorization for scope expansion, merges, deployment, external cost, deletion, credential/access changes and production infrastructure changes. Jeeves cannot approve those actions itself. Permission for steps already included in an explicit scope does not require repetitive confirmation.
 
-Lee may combine intake and bounded drafting in one approval. Do not repeat approval prompts for steps already covered by that scope. Implementation, children, acceptance and merge must have their applicable explicit authorization.
+Decomposition and worker handling may occur through the configured native Kanban workflow. Neither the current hook nor a parent task establishes universal issue-bound child approval enforcement. Do not represent the Issue #19 synchronous acceptance route as enforcement of all ordinary workers or children.
 
-Returning approved work to Review is part of the bounded run; it does not require another approval prompt. Scope changes or revisions after approval require renewed review of the changed scope, not automatic replay.
+## Actual execution behavior
 
-## Enforcement and escalation
+Ready can dispatch automatically; To-do can auto-promote after prerequisites complete. Queue import is a planning action and does not itself establish execution authorization. The required approval stop before planning-only work dispatches is still unimplemented; report this limitation rather than claiming a hidden manual gate exists.
 
-Normal dependency-based promotion to Ready is allowed and requires no execution approval. Ready is eligibility, not permission: an unapproved Ready card must remain idle. Lee authorizes the exact work at the guarded launch boundary. Statuses, assignees and card movements do not grant execution authorization. Maintain one participating guarded execution at a time. Do not bypass policy through another CLI, tool, direct database write, auxiliary model route or dispatcher.
+The installed hooks require worker Review, allow ordinary project tools and preserve explicit tool-free acceptance calls. They are workflow controls, not an OS sandbox against direct CLI/database bypass. Existing native approvals and configured concurrency remain; global detached cross-profile guard coverage is not claimed.
 
-Use [workflow](GITHUB_HERMES_WORKFLOW.md), [execution policy](KANBAN_EXECUTION_POLICY.md) and [document procedure](MANUAL_DOCUMENT_HANDOFF.md). If an existing policy blocks an authorized operation, report the boundary and implement/review a narrow permitted entry rather than disabling the policy. Stop and escalate unclear scope or unsupported entry paths to Lee.
+## Review, return and escalation
+
+Lee reviews actual artifacts and requests scoped corrections or accepts through Complete. Explicit GitHub result return posts execution evidence and sets Human Review or Blocked; it never closes the issue. Native Done, a subtask completion or a merged support PR is not blanket issue acceptance.
+
+If work cannot finish, use `kanban_block` with the specific blocker. Avoid repeated retries that conceal errors. Do not bypass a legitimate control to change unapproved scope. Distinguish an actual technical denial from obsolete text in an old skill or report.
+
+Use [workflow](GITHUB_HERMES_WORKFLOW.md), [execution policy](KANBAN_EXECUTION_POLICY.md) and [folder map](HERMES_FOLDER_MAP.md). Read-only card inspection is allowed. Historical no-tools document contracts remain separate bounded routes, not the only current execution route.

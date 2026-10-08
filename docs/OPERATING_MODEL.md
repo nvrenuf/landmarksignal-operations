@@ -1,21 +1,19 @@
-# Operating Model
+# Operating model
 
 ## Authority
 
-- **Lee:** final authority for priorities, sequencing, scope, approvals and acceptance.
-- **ChatGPT:** planning, architecture and review advice; implements explicitly authorized support work. Cannot grant Jeeves permission on Lee's behalf.
-- **GitHub Project #3:** authoritative backlog, priority, Execution Order, Sprint, dependencies, issue/PR decisions and published evidence.
-- **Jeeves:** coordinates approved execution and records local task/run state in the existing LandmarkSignal Hermes board. May propose specifications or subtasks; proposals are not authorization.
-- **Argus and LMS workers:** planned roles in the accepted [roster](BOT_ROSTER_DRAFT.md). Roster approval did not deploy workers or grant tool access.
+- **Lee:** final authority for scope, business priority, sequencing, acceptance, closure, merges and deployment.
+- **ChatGPT:** planning and review advice, plus implementation of authorized support work. It does not grant Jeeves permission on Lee's behalf.
+- **GitHub Project #3:** authoritative backlog, Priority, Execution Order, Sprint, requirements and published evidence.
+- **Jeeves/Hermes workers:** carry out selected scope, record actual task/run/workspace identity, report blockers and submit outputs to Review. Default and Jeeves profiles both participate in the current native workflow; the Issue #30 worker used default.
+- **Planned roster:** roles documented in [BOT_ROSTER_DRAFT.md](BOT_ROSTER_DRAFT.md). Roster acceptance does not mean those bots were deployed.
 
-## Workflow
+## Current operation
 
-Select a GitHub issue, prepare one Triage card, draft its specification, resolve dependencies in To-do and allow normal promotion to Ready. Ready waits for Lee's explicit execution approval through the guarded launch boundary. Execute only the exact approved scope, return evidence to Review, and complete only after Lee accepts. This is the agreed target; reusable intake, guarded specification and general Ready-card launch remain pending. Ready eligibility is not execution permission.
+Lee selects a GitHub queue batch; the dashboard imports it into native Triage. Hermes prepares specifications and dependencies using native orchestration. Ready is dispatch eligibility and may launch work; To-do can promote automatically. Workers request Review. Lee inspects and accepts through Complete, then explicitly returns evidence to GitHub. GitHub closure requires acceptance of the whole issue.
 
-See [GitHub to Hermes workflow](GITHUB_HERMES_WORKFLOW.md) for implementation boundaries, and [execution contract](JEEVES_EXECUTION_CONTRACT.md) for authority.
+Import is planning permission. An enforced approval stop between planning and automatic dispatch is **not implemented**. This difference from the earlier target remains an open Issue #9 criterion, not permission inferred from a model or card state.
 
-## Established and remaining capability
+See [workflow](GITHUB_HERMES_WORKFLOW.md), [execution contract](JEEVES_EXECUTION_CONTRACT.md), [execution policy](KANBAN_EXECUTION_POLICY.md) and [checkpoint](HERMES_WORKFLOW_CHECKPOINT.md). Older descriptions of foreground-only ordinary work and pending batch intake are superseded.
 
-The foreground acceptance and Issue #7/#6 no-tools document routes were validated. PRs #20, #23, #24 and #25 were merged with Lee's authorization. Ordinary dispatcher supervision, general tool-enabled execution, automatic GitHub synchronization, scheduled work and startup recovery remain unverified. Do not enable them based on broad role descriptions.
-
-Jeeves may optimize execution within the approved scope; it may not change strategy or priorities. Existing Community Capital DGX services remain production dependencies. Infrastructure work must be additive and separately authorized; do not restart, rebind or interrupt existing services.
+Jeeves may optimize execution within the selected scope, not strategy or business priority. Infrastructure work must remain separately authorized and additive. Do not interrupt existing Community Capital/DGX services or expand scope into NCS, model changes or bot deployment as part of ordinary handoff.

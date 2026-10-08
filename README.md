@@ -1,42 +1,24 @@
-## Current workflow checkpoint — October 7, 2026
-
-Use [GitHub to Hermes workflow](docs/GITHUB_HERMES_WORKFLOW.md) and the reconciled operating model/execution contract. PRs #20, #23, #24 and #25 are merged; document pilots are accepted. Reusable guarded issue intake/specification and ordinary tool-enabled dispatch remain pending. The original setup summary below is historical.
-
 # LandmarkSignal Operations
 
-LandmarkSignal operating system for strategy execution, sprint planning, Hermes/Jeeves orchestration, infrastructure operations, and cross-repository coordination.
+Planning, issue tracking and the supervised GitHub-to-Hermes workflow for LandmarkSignal.
 
-## Current State
+## Current checkpoint — October 7, 2026
 
-**Status:** Initial setup complete
+PRs #28 and #29 are merged. The manual GitHub queue import, native worker Review and explicit GitHub evidence return are installed on Lee's Windows laptop. Issue #30 exercised a real default-profile worker: it stayed in Review during corrections, Lee accepted it through Complete, and its artifact evidence returned to GitHub. Issue #30 is closed; Issue #9 remains open in Human Review with two outstanding criteria.
 
-**Last Updated:** 2026-09-30 22:35:28
+The visible LandmarkSignal Kanban was cleared by archiving 16 existing cards. All card/run/comment/dependency history and workspace files were preserved with a database backup. Archived cards remain linked to their GitHub issues; importing an archived issue again does not reset or duplicate it.
 
-## Operating Model
+## Start here
 
-See [docs/OPERATING_MODEL.md](docs/OPERATING_MODEL.md) for the control hierarchy.
+- [Operator quickstart](docs/WORKFLOW_QUICKSTART.md): the accepted Issue #30 document.
+- [GitHub-to-Hermes workflow](docs/GITHUB_HERMES_WORKFLOW.md): implemented behavior and remaining limits.
+- [Hermes folder map](docs/HERMES_FOLDER_MAP.md): runtime, profiles, plugins, board, artifacts and backups.
+- [Operating model](docs/OPERATING_MODEL.md) and [Jeeves execution contract](docs/JEEVES_EXECUTION_CONTRACT.md): authority and scope.
+- [Execution policy](docs/KANBAN_EXECUTION_POLICY.md): actual controls and their limits.
+- [Acceptance checkpoint](docs/HERMES_WORKFLOW_CHECKPOINT.md): evidence and outstanding work.
 
-## Execution
+GitHub Project [#3](https://github.com/nvrenuf/projects/3) holds priorities, Execution Order, Sprint, approvals and published evidence. The existing `landmarksignal` Hermes board records local execution. Ready can launch native work; worker output goes to Review; Lee accepts through Complete. Return evidence through the dashboard button. GitHub closure is a separate human decision.
 
-See [docs/CURRENT_SPRINT.md](docs/CURRENT_SPRINT.md) for active sprint work.
+This repository contains maintained integration source and documentation. It is not the installed upstream Hermes runtime, a backup of the entire Hermes folder, or proof that uncommitted laptop files were pushed. Do not commit credentials, live databases or model files.
 
-## Documentation
-
-- [OPERATING_MODEL.md](docs/OPERATING_MODEL.md) — Control hierarchy and execution roles
-- [JEEVES_EXECUTION_CONTRACT.md](docs/JEEVES_EXECUTION_CONTRACT.md) — Jeeves authority and boundaries
-- [PRODUCT_PORTFOLIO.md](docs/PRODUCT_PORTFOLIO.md) — Product portfolio (to be populated)
-- [INFRASTRUCTURE_BASELINE.md](docs/INFRASTRUCTURE_BASELINE.md) — Verified infrastructure baseline
-
-## Hermes/Jeeves Integration
-
-This repository serves as the authoritative execution record for LandmarkSignal. Jeeves (the executive orchestrator) coordinates Hermes workers to implement approved work from GitHub issues and decisions.
-
-**Rule:** Jeeves may optimize execution of approved work. Jeeves may not optimize LandmarkSignal strategy.
-
-## Current Issues
-
-See the [GitHub Issues](https://github.com/nvrenuf/landmarksignal-operations/issues) tab for active work items.
-
----
-
-*This is the LandmarkSignal operating system. All work is tracked here.*
+Historical pilots and repair reports remain as evidence. Use the current documents above for operation; do not reinstall old repair scripts merely because they remain in the repository.

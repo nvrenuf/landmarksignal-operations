@@ -1,54 +1,46 @@
-# GitHub to Hermes workflow
+# GitHub-to-Hermes workflow
 
-## Authority and current implementation
+Current operating checkpoint: October 7, 2026, after PRs #28/#29 and Issue #30 acceptance. This replaces earlier foreground-only procedures for ordinary project work.
 
-Lee selects priorities, approves scope and authorizes execution. ChatGPT advises and reviews. GitHub Project #3 is the authoritative backlog, dependencies, priority, Execution Order, Sprint, issue/PR and published-evidence record. The existing LandmarkSignal Hermes board records local task/run state. A completed Hermes subtask does not close a broader GitHub issue.
+## Authority
 
-This document defines the agreed workflow and distinguishes it from implemented capability. Explicit approval never follows merely from a GitHub status, a card move, an assignee or a title.
+Lee controls scope, priorities, Execution Order, Sprint, acceptance, issue closure, merges and deployment. ChatGPT helps plan, implement authorized support work and review. Jeeves/Hermes executes the selected task scope and returns evidence. GitHub Project #3 is the authoritative backlog and decision record; native Kanban records local task/run state.
 
-## Selected-issue workflow
+## Actual workflow
 
-| Stage | Intended behavior | Current implementation / boundary |
-|---|---|---|
-| GitHub backlog | Select one issue and bounded deliverable; do not mirror the whole project. | GitHub CLI access as nvrenuf was verified in Lee's PowerShell, not inside Jeeves. |
-| Triage | Preserve source URL, original requirements, updated timestamp and source hash; prepare a specification. | Native card creation and specification exist. Reusable issue intake and guarded specification are not yet connected. Import permission is not execution permission. |
-| To-do | Resolve specification details and dependencies. | Normal dependency-based promotion to Ready is allowed; no execution approval is implied. |
-| Ready | Prepared and dependency-cleared; wait for Lee to approve execution of this exact scope. | Ready is eligibility, not permission. The launch boundary must prevent any automatic worker start while approval is absent; this general route remains unverified. |
-| Scheduled | Hold approved work for a specified time, if explicitly requested. | A time threshold is not approval. General scheduled execution remains unverified. |
-| In Progress | Execute under the guard for the whole work lifetime. | Two no-tools document tasks and the foreground acceptance route were validated. Ordinary dispatcher and tool-enabled workers are not accepted. |
-| Review | Return output and evidence; Lee accepts or requests changes. | Document pilots returned to native Review and were accepted. |
-| Done | Complete only the accepted card; publish results to GitHub and assess all issue criteria. | Issue #7 and #6 document cards completed. Broader GitHub issues remain open. Publication currently occurs manually through reviewed PRs. |
+| Stage/action | Implemented behavior |
+|---|---|
+| GitHub Queued for Jeeves | Selects open issues for the explicit import batch. It is a Project Status option, not a label. |
+| Import queued work | Lee clicks the button in Jeeves Launch. It reads GitHub and creates unassigned native Triage cards with preserved source requirements, identities, hashes and recorded blockers. |
+| Triage / To-do | Hermes specifies/decomposes work according to native orchestration settings. GitHub blockers are source facts; the importer does not itself create dependency cards or native links. |
+| Ready | Native dispatch eligibility. It can launch work automatically; To-do can auto-promote when prerequisites finish. There is no separate implemented manual approval stop before dispatch. |
+| Running | Ordinary native tools are available for the task scope under existing Hermes approvals and configured limits. |
+| Review | Workers call `kanban_request_review`. Default/Jeeves hooks block `kanban_complete` on the LandmarkSignal board. Automatic review dispatch is disabled. |
+| Complete | Lee accepts the actual output through the dashboard. This completes the local card, not its GitHub issue. |
+| Send results to GitHub Human Review / Blocked | Explicit button reads actual task/run/profile/workspace and artifact hashes, posts deduplicated evidence and changes only the existing Project Status. It leaves the issue open. |
+| GitHub Done / issue closure | Separate human acceptance of the full issue requirements. Project #3's Done-to-close workflow makes premature Done consequential. |
 
-Lee may authorize intake and bounded specification drafting together. Do not ask again for steps already covered by that explicit scope. Implementation and child work still require their applicable distinct authorization.
+Queue/import authorizes planning, not all subsequent execution. The operator must understand that native preparation can reach Ready and start workers. A card title, assignment or model claim does not prove human approval. The lack of an enforced planning-only dispatch gate remains an open Issue #9 requirement; documentation does not supply it.
 
-## Existing native capabilities and the missing connection
+## Operator procedure
 
-Reviewed Hermes revision: `0c2ff854a5c5121c75ac0b0a35241a580ee27fb7`.
+1. Select a bounded GitHub issue and clear requirements; preserve human-controlled fields.
+2. Set its Project Status to Queued for Jeeves. Review the whole queue before importing, because the button imports all eligible queued issues.
+3. Open [Jeeves Launch](http://127.0.0.1:9119/jeeves-launch?profile=jeeves) and click Import queued work. Inspect created/existing/skipped results.
+4. Follow the card on the [LandmarkSignal Kanban](http://127.0.0.1:9119/kanban?profile=jeeves). Ready can dispatch; this is not a holding column.
+5. Inspect real files in the card's assigned workspace at Review. A fresh chat may start in another directory; read the card's `workspace_path` instead of guessing.
+6. Request scoped corrections as needed. Accept with Complete only when satisfied.
+7. In Jeeves Launch, under Hermes → GitHub review, click Refresh results, inspect the correct issue's evidence, then explicitly send it to GitHub.
+8. Close the GitHub issue only after all its criteria are accepted. Completed subtasks do not establish completion of their root issue.
 
-- `hermes_cli/kanban_parser.py` exposes task creation with `--triage` and single-task `specify`.
-- `hermes_cli/kanban_specify.py` uses the configured auxiliary `triage_specifier` model, not necessarily Jeeves's primary model.
-- `hermes_cli/kanban_db.py::specify_triage_task` calls `recompute_ready` after updating the spec. A parent-free card can become Ready immediately.
-- The native dashboard specify route invokes this auxiliary path; the agent pre-tool hook does not establish guard coverage for this direct route.
-- Manual orchestration disables automatic decomposition, not every specification, promotion or worker path.
-- `kanban boards import` imports an exported Hermes archive into a new board. It is not GitHub issue/project synchronization.
-- The installed Jeeves policy permits planning reads but denies unowned shell commands and task mutations. Successful `gh` access in PowerShell does not establish policy-permitted agent access.
+## Identity, repeats and evidence
 
-Sources: [native parser](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/hermes_cli/kanban_parser.py), [specifier](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/hermes_cli/kanban_specify.py), [database transitions](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/hermes_cli/kanban_db.py), [dashboard API](https://github.com/NousResearch/hermes-agent/blob/0c2ff854a5c5121c75ac0b0a35241a580ee27fb7/plugins/kanban/dashboard/plugin_api.py).
+The importer uses a stable Project/issue key, not a body hash, to prevent duplicates. Changed issue text does not silently reset an existing task. Archived linked cards are reported as existing and never reactivated by intake. Request a separately scoped follow-up for unfinished work rather than deleting history to force another import.
 
-Next implementation boundary: reuse authenticated GitHub reads and native Kanban creation; add a narrow trusted intake/approval path only where needed. Before enabling it, bind the exact issue/task/workspace/source snapshot, prevent duplicate intake, preserve the original source separately from model-written specs, allow normal promotion to Ready, enforce explicit approval at the launch boundary, verify automatic dispatch is disabled on every applicable host path, verify the auxiliary route/model, and prove a Ready card stays idle without approval and only the exact approved card launches under the guard. Do not relax the global tool hook or enable automatic decomposition to achieve intake.
+Evidence includes actual native task/run/profile/workspace and current local artifact hashes. It is not automatic publication of file contents, a remote PR, proof of passing tests or a verified human approval record. Return supports Human Review and Blocked; continuous synchronization of every native state is not implemented.
 
-## Ready and launch approval
+## Limits and precedence
 
-Ready means the task is prepared and dependencies are satisfied. It is permitted to reach Ready automatically; Lee need not approve that state transition. Approval belongs to the exact execution scope at Approve and run. Moving or assigning the card does not grant that permission. Automatic gateway/background/ordinary dispatch must not consume unapproved Ready cards. Disabling dispatch in one profile is not proof that every applicable host path is disabled. Verify the actual live launch boundary before using general Ready-card execution.
+See [checkpoint](HERMES_WORKFLOW_CHECKPOINT.md) for live evidence and remaining Issue #9 criteria. Ready/To-do approval enforcement and a live failed/Blocked return remain unresolved. Global cross-profile mutex enforcement, ordinary child authorization, startup recovery, scheduled/unattended work and additional model/bot deployments are not established by this checkpoint.
 
-The accepted Issue #7/#6 document pilots used native sticky Blocked holds. Preserve those completed cards and evidence. They are historical implementation details, not a requirement to block Ready promotion in the intended reusable workflow. No live status or dispatcher setting is changed by this documentation update.
-
-## Current operating procedure
-
-Use the existing Jeeves Launch tab at `http://127.0.0.1:9119/jeeves-launch?profile=jeeves` only for installed, reviewed document contracts. Completed documents remain readable and are not relaunched. New contracts require source review. Do not click the ordinary dispatcher, native Specify or Decompose for new work until their intended guarded route is reviewed and verified.
-
-One participating guarded LandmarkSignal execution at a time. Child creation and execution each require the applicable explicit scoped human authorization; parent approval does not imply either. No bot deployment, priority/order/sprint changes, issue closure, production merge, infrastructure change or external cost follows from importing a task.
-
-## Documentation precedence
-
-Use current explicit Lee decisions, then the operating model and execution contract for authority, this workflow and execution policy for procedures, and dated artifacts for evidence. Documents do not grant capabilities missing from executable code. If instructions conflict, report the exact conflict; do not choose a permissive interpretation. Historical reports and pre-reconciliation skill references are evidence only, not launch instructions.
+Follow current explicit Lee decisions, the current operating model/contract, this workflow and execution policy. Dated reports, old skill references and earlier no-tools document launchers describe their own historical routes; they do not override this current workflow. A documentation change does not install updated instructions in the local Hermes skill folder.
