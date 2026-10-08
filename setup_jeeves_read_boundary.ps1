@@ -1,3 +1,4 @@
+param([string]$InstalledAclBackup)
 $ErrorActionPreference = 'Stop'
 $report = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Jeeves-Read-Boundary-Repair.txt'
 $root = Join-Path $env:LOCALAPPDATA 'hermes'
@@ -43,6 +44,39 @@ try {
     & $python -B (Join-Path $PSScriptRoot 'test_jeeves_read_boundary.py')
     if ($LASTEXITCODE -ne 0) { throw 'Boundary checks failed. No installation performed.' }
     Write-Host '=== Back up and install inspected policy correction ==='
+    if ($InstalledAclBackup) {
+        $expectedBackupRoot = Join-Path $root 'landmarksignal-v1\recovery'
+        $backupItem = Get-Item -LiteralPath $InstalledAclBackup -ErrorAction Stop
+        if (!$backupItem.PSIsContainer -or $backupItem.Parent.FullName -ine $expectedBackupRoot -or
+            $backupItem.Name -notmatch '^read-admin-[a-f0-9]{32}$') {
+            throw 'Unexpected saved ACL backup location. Nothing changed.'
+        }
+        $savedSecurity = Get-Content -Raw -LiteralPath (Join-Path $backupItem.FullName 'file-acls.before.json') | ConvertFrom-Json
+        $expectedPaths = @(Join-Path $root 'profiles\jeeves\plugins\landmarksignal-execution\policy.py')
+        foreach ($profileDirectory in @($root, (Join-Path $root 'profiles\jeeves'))) {
+            $copy = Join-Path $profileDirectory 'plugins\landmarksignal-launch\dashboard\runner\landmarksignal_policy.py'
+            if (Test-Path -LiteralPath $copy -PathType Leaf) { $expectedPaths += $copy }
+        }
+        $sourceText = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'landmarksignal_policy.py'), [Text.Encoding]::UTF8).Replace("`r`n", "`n")
+        if (@($savedSecurity.PSObject.Properties).Count -ne $expectedPaths.Count) {
+            throw 'Saved security snapshot does not cover exactly the installed policy copies.'
+        }
+        foreach ($path in $expectedPaths) {
+            $before = $savedSecurity.PSObject.Properties[$path].Value
+            $after = (Get-Acl -LiteralPath $path).Sddl
+            # Accept only the observed auto-inherited DACL control flag difference.
+            # Owner, group, protected flags, ACE order, principals and rights remain exact.
+            if (!$before -or $before.Replace('D:AI(', 'D:(') -cne $after.Replace('D:AI(', 'D:(')) {
+                throw "Actual security difference remains: $path"
+            }
+            if ([IO.File]::ReadAllText($path, [Text.Encoding]::UTF8).Replace("`r`n", "`n") -cne $sourceText) {
+                throw "Installed policy content differs: $path"
+            }
+        }
+        Write-Host 'PASS: installed contents and saved permissions match; only the observed AI flag is normalized.'
+        & $python -B (Join-Path $PSScriptRoot 'repair_jeeves_read_boundary.py')
+        if ($LASTEXITCODE -ne 0) { throw 'Installed policy verification stopped. Dashboard left running.' }
+    } else {
     Write-Host 'Windows will request administrator approval for the protected policy update only.'
     $maintenance = Join-Path $PSScriptRoot 'install_jeeves_read_boundary_admin.ps1'
     $admin = Start-Process -FilePath (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') `
@@ -51,6 +85,7 @@ try {
     $adminReport = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Jeeves-Read-Boundary-Admin.txt'
     if (Test-Path -LiteralPath $adminReport) { Get-Content -LiteralPath $adminReport | Write-Host }
     if ($admin.ExitCode -ne 0) { throw 'Elevated policy repair stopped. Dashboard left running; return the reports.' }
+    }
     Write-Host '=== Reload existing standalone browser dashboard ==='
     $current = Get-CimInstance Win32_Process -Filter "ProcessId=$dashboardPid"
     if (!$current -or $current.CreationDate -ne $processCreated) {

@@ -49,10 +49,10 @@ try {
     foreach ($path in $acls.Keys) {
         try {
             # Replacement creates a new file. Restore its exact previous owner/DACL.
-            if ((Get-Acl -LiteralPath $path).Sddl -ne $acls[$path].Sddl) {
+            if ((Get-Acl -LiteralPath $path).Sddl.Replace('D:AI(', 'D:(') -cne $acls[$path].Sddl.Replace('D:AI(', 'D:(')) {
                 Set-Acl -LiteralPath $path -AclObject $acls[$path]
             }
-            if ((Get-Acl -LiteralPath $path).Sddl -ne $acls[$path].Sddl) {
+            if ((Get-Acl -LiteralPath $path).Sddl.Replace('D:AI(', 'D:(') -cne $acls[$path].Sddl.Replace('D:AI(', 'D:(')) {
                 throw "File protection differs after maintenance: $path"
             }
         } catch {

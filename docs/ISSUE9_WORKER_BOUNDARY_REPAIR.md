@@ -38,6 +38,17 @@ temporary-file attempt and immediately reports access denial instead of letting
 Windows tempfile retry permission failures. The original denied attempt stopped
 at temporary-file creation before replacing the first policy file.
 
+The subsequent Windows run installed two policy copies successfully and retained
+the protected execution-policy ACL. Verification of the dashboard helper copy
+stopped on `D:` versus `D:AI` despite identical owner, group and ordered access
+entries. Microsoft documents AI as SE_DACL_AUTO_INHERITED. The verifier now
+normalizes only that exact observed DACL flag form; any other owner, group,
+principal, permission, ACE order or protection flag difference still fails.
+`-InstalledAclBackup` resumes using the saved original file security snapshot,
+checks installed content with newline normalization, and requires no elevation
+or policy replacement before the normal-user dashboard reload. Native guarded
+worker execution remains unverified.
+
 ## Remaining execution boundary
 
 This fixes observation and safe blocker reporting. It does not connect a native
