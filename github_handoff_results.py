@@ -20,6 +20,7 @@ def inspect_results(root, selector=DEFAULT_PROJECT):
         if conn.execute("SELECT count(*) FROM tasks WHERE status='running'").fetchone()[0]:
             raise RuntimeError('Wait for running LandmarkSignal work before returning results')
         result=[]
+        has_events=bool(conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='task_events'").fetchone())
         for row in conn.execute('SELECT * FROM tasks'):
             card=dict(row)
             if card['status'] not in ('review','done','blocked') or not card.get('workspace_path'): continue
@@ -47,10 +48,30 @@ def inspect_results(root, selector=DEFAULT_PROJECT):
                'issue_id':issue['id'],'project_selector':selector,
                'source_sha256':digest(source),
                'project_id':source['project_id'],'project_item_id':source['project_item_id'],
+               'required_pr_merge':source.get('requires_pr_merge') is True,
                'board':'landmarksignal','workspace':str(workspace),'run':dict(run),'artifacts':artifacts,
                'proposed_status':'Blocked' if card['status']=='blocked' else 'Human Review',
                'acceptance_verified':False}
             r['snapshot_sha256']=digest(r);result.append(r)
+            if has_events:
+                event=conn.execute("SELECT payload FROM task_events WHERE task_id=? AND kind='human_accepted' ORDER BY id DESC LIMIT 1",
+                                   (card['id'],)).fetchone()
+                if event:
+                    accepted=json.loads(event[0]); saved=accepted.get('evidence_record') or {}
+                    if (saved.get('task_id') != card['id'] or saved.get('project_selector') != selector
+                            or saved.get('source_sha256') != r['source_sha256']
+                            or saved.get('artifacts') != artifacts):
+                        raise RuntimeError('Accepted source or artifacts changed; inspect the task event before retrying')
+                    result[-1]={**saved,'status':card['status'],'acceptance_recorded':True,
+                                'acceptance_verified':True,
+                                'acceptance_decision':{'summary':accepted.get('summary'),
+                                                       'pr_requirement':accepted.get('pr_requirement'),
+                                                       'pr_url':accepted.get('pr_url'),
+                                                       'accepted_at':accepted.get('accepted_at')}}
+                else:
+                    result[-1]['acceptance_recorded']=False
+            else:
+                result[-1]['acceptance_recorded']=False
         return result
 
 
@@ -66,6 +87,8 @@ def return_result(root, task_id, snapshot_sha256, reader=gh, selector=DEFAULT_PR
     if len(rows)!=1 or rows[0]['snapshot_sha256']!=snapshot_sha256:
         raise RuntimeError('Result changed; refresh before returning it')
     record=rows[0]
+    if record.get('acceptance_recorded'):
+        raise RuntimeError('Human acceptance is recorded; use Sync completion instead of returning Human Review')
     if reader(['api','user','--jq','.login']).strip()!='nvrenuf': raise RuntimeError('GitHub account must be nvrenuf')
     match=URL.fullmatch(record['issue_url']);repo,number=match.groups()
     live=json.loads(reader(['api',f'repos/{repo}/issues/{number}']))

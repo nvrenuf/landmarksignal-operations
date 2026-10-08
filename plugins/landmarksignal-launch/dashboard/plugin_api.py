@@ -182,8 +182,12 @@ def project_selection(request):
 @router.get('/github-projects')
 def github_projects(request: Request):
     require_jeeves(request)
-    from github_projects import PROJECTS, DEFAULT_PROJECT, get_project
-    return {'projects': [get_project(key) for key in PROJECTS], 'default': DEFAULT_PROJECT}
+    from github_projects import DEFAULT_PROJECT, discover_projects
+    try:
+        projects = discover_projects()
+    except RuntimeError as error:
+        raise HTTPException(503, str(error))
+    return {'projects': projects, 'default': DEFAULT_PROJECT}
 
 
 @router.post('/github-intake')
@@ -218,6 +222,34 @@ def github_results(request: Request):
 class ResultReturn(BaseModel):
     task_id: str
     snapshot_sha256: str
+
+
+class HumanCompletion(BaseModel):
+    task_id: str
+    snapshot_sha256: str
+    summary: str
+    pr_requirement: str
+    pr_url: str = ''
+    phrase: str
+
+
+@router.post('/github-complete')
+def github_complete(request: Request, payload: HumanCompletion):
+    require_jeeves(request)
+    if request.headers.get('origin') != str(request.base_url).rstrip('/'):
+        raise HTTPException(403, 'Accept work from this dashboard page')
+    from github_acceptance import accept_complete
+    from execution_guard_v1_final import ExecutionGuard
+    selected = project_selection(request)
+    root, _, _ = paths()
+    try:
+        return ExecutionGuard('9', 'github-human-acceptance', timeout=0).execute(
+            lambda: accept_complete(root, payload.task_id, payload.snapshot_sha256,
+                                    payload.summary, payload.pr_requirement, payload.pr_url,
+                                    payload.phrase, selector=selected))
+    except Exception as error:
+        raise HTTPException(409, str(error) if isinstance(error, RuntimeError)
+                            else 'Human completion stopped: ' + type(error).__name__ + '. Refresh and retry.')
 
 
 @router.post('/github-return')

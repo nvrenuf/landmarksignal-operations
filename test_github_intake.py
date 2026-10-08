@@ -44,7 +44,9 @@ class ReadTests(unittest.TestCase):
             nodes=[item, {**item,'id':'archived','isArchived':True}, {**item,'id':'draft','content':{'__typename':'DraftIssue'}},
                    {**item,'id':'otherstatus','fieldValues':{'pageInfo':{'hasNextPage':False},'nodes':[{'name':'Defined','field':{'name':'Status'}}]}}]
             return json.dumps({'data':{'user':{'projectV2':{'id':get_project()['id'],'number':3,'owner':{'login':'nvrenuf'},'title':'Project','items':{
-                'nodes':nodes,'pageInfo':{'hasNextPage':n==1,'endCursor':'cursor1'}}}}}})
+                'nodes':nodes,'pageInfo':{'hasNextPage':n==1,'endCursor':'cursor1'}},
+                'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'name':'Status','options':[
+                    {'name':name} for name in ('Queued for Jeeves','Human Review','Blocked','Done')]}]}}}}})
         actual=intake.read_queue(reader)
         self.assertEqual([r['issue']['number'] for r in actual],[1,2])
         self.assertEqual(actual[0]['github_blockers'],records[0]['github_blockers'])

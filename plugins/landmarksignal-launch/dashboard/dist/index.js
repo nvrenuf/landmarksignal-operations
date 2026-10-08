@@ -21,7 +21,7 @@
       h("strong", null, "GitHub → Hermes Triage"),
       h("p", null, "Set issues in the selected source project to Queued for Jeeves, then import that project's batch here."),
       h("p", null, "Imports preserve requirements and GitHub dependencies in unassigned Triage. Native preparation may reach Ready and launch workers; import does not add a separate execution approval gate."),
-      h("button", {onClick: importQueue, disabled: busy, style: {padding: "8px 14px", cursor: "pointer"}}, busy ? "Reading GitHub and importing…" : "Import queued work"),
+      h("button", {onClick: importQueue, disabled: busy || !props.statusReady, style: {padding: "8px 14px", cursor: "pointer"}}, busy ? "Reading GitHub and importing…" : "Import queued work"),
       h("a", {href: "/kanban?profile=jeeves&board=landmarksignal", style: {marginLeft: "16px"}}, "Open LandmarkSignal Kanban"),
       error ? h("p", {role: "alert"}, error) : null,
       result ? h("div", null,
@@ -31,12 +31,45 @@
         result.skipped.map(function (item) { return h("p", {key: item.issue_url}, item.issue_url + ": " + item.reason); }),
         h("small", null, "Batch report: " + result.batch_id + ". Existing cards preserved. No execution approval granted.")) : null);
   }
+  function CompletionPanel(props) {
+    var row=props.row, decision=row.acceptance_decision||{};
+    var a=R.useState(decision.summary||""), summary=a[0], setSummary=a[1];
+    var b=R.useState(decision.pr_requirement||""), requirement=b[0], setRequirement=b[1];
+    var c=R.useState(decision.pr_url||""), prUrl=c[0], setPrUrl=c[1];
+    var d=R.useState(""), phrase=d[0], setPhrase=d[1];
+    async function complete() {
+      if (props.busy) return;
+      props.setBusy(true); props.setMessage("");
+      try {
+        var response=await projectApi("/github-complete", {method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({task_id:row.task_id,snapshot_sha256:row.snapshot_sha256,summary:summary,
+            pr_requirement:requirement,pr_url:prUrl,phrase:phrase})},props.project);
+        props.setMessage(response.issue_url+" → Done and closed. Human acceptance recorded.");
+        await props.refresh();
+      } catch(e) { props.setMessage(String(e.message || e)+" Refresh results and retry if GitHub synchronization is incomplete."); await props.refresh(); }
+      finally { props.setBusy(false); }
+    }
+    var canSubmit=!!summary.trim() && !!requirement && (requirement!=="required" || !!prUrl.trim())
+      && phrase==="ACCEPT "+row.task_id;
+    return h("div",{style:{border:"1px solid #A9B7A4",padding:"12px",marginTop:"10px"}},
+      h("strong",null,row.acceptance_recorded ? "Resume accepted completion" : "Accept Review and Complete"),
+      h("p",null,"This records your acceptance, completes the native card, posts evidence, sets this project's Status to Done, and closes its issue. A required PR must already be merged."),
+      row.acceptance_recorded ? h("p",null,"Acceptance is already recorded. Repeat the same decision to finish any incomplete GitHub step; the evidence comment is deduplicated.") : null,
+      h("label",null,"Acceptance summary ",h("textarea",{value:summary,onChange:function(e){setSummary(e.target.value);},maxLength:2000,rows:3,style:{display:"block",width:"100%"}})),
+      h("label",null,"PR merge requirement ",h("select",{value:requirement,onChange:function(e){setRequirement(e.target.value);if(e.target.value!=="required")setPrUrl("");}},
+        h("option",{value:""},"Choose explicitly"),h("option",{value:"required"},"Merged PR required"),
+        h("option",{value:"not_required"},"No PR merge required"))),
+      requirement==="required" ? h("label",null,"Merged PR URL ",h("input",{value:prUrl,onChange:function(e){setPrUrl(e.target.value);},placeholder:"https://github.com/owner/repo/pull/123",style:{width:"100%"}})) : null,
+      h("p",null,h("label",null,"Type ACCEPT "+row.task_id+" ",h("input",{value:phrase,onChange:function(e){setPhrase(e.target.value);},autoComplete:"off"}))),
+      h("button",{onClick:complete,disabled:props.busy||!canSubmit,style:{padding:"8px 14px",cursor:"pointer"}},
+        props.busy ? "Synchronizing…" : (row.acceptance_recorded ? "Sync completion" : "Accept & Complete")));
+  }
   function ResultPanel(props) {
     var a=R.useState([]), rows=a[0], setRows=a[1];
     var b=R.useState(""), message=b[0], setMessage=b[1];
     var busy=props.busy, setBusy=props.setBusy;
     async function refresh() { try { setRows((await projectApi("/github-results", undefined, props.project)).results); } catch(e) { setMessage(e.message); } }
-    R.useEffect(function(){ refresh(); }, []);
+    R.useEffect(function(){ refresh(); }, [props.project]);
     async function send(row) {
       if (busy) return;
       setBusy(true); setMessage("");
@@ -51,7 +84,8 @@
       h("button",{onClick:refresh,disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"}},"Refresh results"),
       rows.map(function(row){ return h("div",{key:row.task_id},h("p",null,row.title+" · "+row.status),
         h("details",null,h("summary",null,"Inspect return evidence"),h("pre",{style:{whiteSpace:"pre-wrap"}},JSON.stringify(row,null,2))),
-        h("button",{disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"},onClick:function(){send(row);}},"Send results to GitHub "+row.proposed_status)); }),
+        !row.acceptance_recorded ? h("button",{disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"},onClick:function(){send(row);}},"Send results to GitHub "+row.proposed_status) : null,
+        row.status==="review" || row.acceptance_recorded ? h(CompletionPanel,{row:row,project:props.project,busy:busy,setBusy:setBusy,setMessage:setMessage,refresh:refresh}) : null); }),
       message?h("p",{role:"status"},message):null);
   }
   function ProjectPanel() {
@@ -59,20 +93,30 @@
     var b=R.useState(""), selected=b[0], setSelected=b[1];
     var c=R.useState(""), error=c[0], setError=c[1];
     var d=R.useState(false), busy=d[0], setBusy=d[1];
-    R.useEffect(function () {
-      var alive=true;
-      api("/github-projects").then(function (catalog) {
-        if (alive) { setProjects(catalog.projects); setSelected(catalog.default); }
-      }).catch(function (e) { if (alive) setError(e.message); });
-      return function () { alive=false; };
-    }, []);
+    async function refreshProjects() {
+      if (busy) return;
+      setBusy(true); setError("");
+      try {
+        var catalog=await api("/github-projects");
+        setProjects(catalog.projects);
+        setSelected(function(previous) {
+          return catalog.projects.some(function(p){return p.selector===previous;}) ? previous
+            : (catalog.projects.some(function(p){return p.selector===catalog.default;}) ? catalog.default
+              : (catalog.projects[0] ? catalog.projects[0].selector : ""));
+        });
+      } catch(e) { setError(String(e.message || e)); }
+      finally { setBusy(false); }
+    }
+    R.useEffect(function () { refreshProjects(); }, []);
     var active=projects.find(function (p) { return p.selector===selected; });
     return h("section", null,
       h("label", null, "Source GitHub project ", h("select", {value:selected, disabled:busy, onChange:function(e){setSelected(e.target.value);}},
         projects.map(function(p){return h("option",{key:p.selector,value:p.selector},p.title+" · "+p.owner+" #"+p.number);}))),
+      h("button",{onClick:refreshProjects,disabled:busy,style:{marginLeft:"8px",padding:"8px 14px"}},busy?"Refreshing…":"Refresh projects"),
       active ? h("p", null, "Active source: ", h("a",{href:active.url,target:"_blank",rel:"noopener noreferrer"},active.title+" (#"+active.number+")")) : null,
+      active && !active.status_ready ? h("p",{role:"alert"},"Import unavailable: configure these existing Status options in GitHub: "+active.missing_status.join(", ")+". The launcher will not change project fields.") : null,
       error ? h("p",{role:"alert"},error) : null,
-      active ? h(IntakePanel,{key:"intake:"+selected,project:selected,busy:busy,setBusy:setBusy}) : null,
+      active ? h(IntakePanel,{key:"intake:"+selected,project:selected,statusReady:active.status_ready,busy:busy,setBusy:setBusy}) : null,
       active ? h(ResultPanel,{key:"results:"+selected,project:selected,busy:busy,setBusy:setBusy}) : null);
   }
   function Panel() {

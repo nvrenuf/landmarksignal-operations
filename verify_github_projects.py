@@ -15,15 +15,21 @@ sys.path[:0]=[str(runner),str(source)]
 import github_projects
 import github_queue_intake
 import github_handoff_results
+import github_acceptance
 from install_github_projects import sha
-for module in (github_projects,github_queue_intake,github_handoff_results):
+for module in (github_projects,github_queue_intake,github_handoff_results,github_acceptance):
     if Path(module.__file__).resolve().parent!=runner:
         raise RuntimeError('Verification loaded source instead of installed payload')
 for entry in json.loads((source/'github_projects_assets.json').read_text()):
     if sha((root/entry['target']).read_bytes())!=entry['new_sha256']:
         raise RuntimeError('Installed checksum differs: '+entry['target'])
-print('PASS: all five installed payload hashes and normal-user companion imports')
-for selector in github_projects.PROJECTS:
+print('PASS: all six installed payload hashes and normal-user companion imports')
+projects=github_projects.discover_projects()
+for project in projects:
+    selector=project['selector']
+    if not project['status_ready']:
+        print('CONFIGURATION NEEDED:',selector,', '.join(project['missing_status']))
+        continue
     records=github_queue_intake.read_queue(selector=selector)
     results=github_handoff_results.inspect_results(root,selector)
     print('PASS:',selector,'read-only connection; queued:',len(records),'returnable:',len(results))
