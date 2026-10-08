@@ -5,6 +5,31 @@
   var R = sdk.React, h = R.createElement;
   var base = "/api/plugins/landmarksignal-launch";
   function api(path, init, task) { return sdk.fetchJSON(base + path + "?profile=jeeves&task=" + encodeURIComponent(task || "issue7-status-mapping"), init); }
+  function IntakePanel() {
+    var a = R.useState(false), busy = a[0], setBusy = a[1];
+    var b = R.useState(null), result = b[0], setResult = b[1];
+    var c = R.useState(""), error = c[0], setError = c[1];
+    async function importQueue() {
+      if (busy) return;
+      setBusy(true); setError(""); setResult(null);
+      try { setResult(await api("/github-intake", {method: "POST"})); }
+      catch (err) { setError(String(err.message || err)); }
+      finally { setBusy(false); }
+    }
+    return h("section", {style: {border: "1px solid #A9B7A4", padding: "16px", marginBottom: "16px", borderRadius: "8px"}},
+      h("strong", null, "GitHub → Hermes Triage"),
+      h("p", null, "Select issues in GitHub Project #3 using Queued for Jeeves, then import the batch here."),
+      h("p", null, "Imports preserve original requirements and recorded GitHub dependencies. Specification and execution use the existing Kanban controls; this button starts neither."),
+      h("button", {onClick: importQueue, disabled: busy, style: {padding: "8px 14px", cursor: "pointer"}}, busy ? "Reading GitHub and importing…" : "Import queued work"),
+      h("a", {href: "/kanban?profile=jeeves&board=landmarksignal", style: {marginLeft: "16px"}}, "Open LandmarkSignal Kanban"),
+      error ? h("p", {role: "alert"}, error) : null,
+      result ? h("div", null,
+        h("p", null, result.created.length + " imported · " + result.existing.length + " already linked · " + result.skipped.length + " need review"),
+        result.created.map(function (item) { return h("p", {key: item.task_id}, h("a", {href: item.issue_url, target: "_blank", rel: "noopener noreferrer"}, item.issue_url), " → " + item.task_id + " (Triage)"); }),
+        result.existing.map(function (item) { return h("p", {key: item.task_id}, "Already linked: " + item.issue_url + " → " + item.task_id + " (" + item.status + ")"); }),
+        result.skipped.map(function (item) { return h("p", {key: item.issue_url}, item.issue_url + ": " + item.reason); }),
+        h("small", null, "Batch report: " + result.batch_id + ". Existing cards preserved. No execution approval granted.")) : null);
+  }
   function Panel() {
     var choicesState = R.useState([]), choices = choicesState[0], setChoices = choicesState[1];
     var taskState = R.useState("issue6-roster"), selected = taskState[0], setSelected = taskState[1];
@@ -56,6 +81,7 @@
     var style = {border: "1px solid #A9B7A4", borderRadius: "8px", padding: "16px", marginBottom: "16px"};
     var button = {padding: "8px 14px", marginRight: "8px", border: "1px solid #A9B7A4", borderRadius: "5px", cursor: "pointer"};
     return h("section", {style: style},
+      h(IntakePanel, null),
       h("strong", null, "Jeeves · Approved document tasks"),
       h("p", null, h("label", null, "Task ", h("select", {value: selected, onChange: changeTask, disabled: busy},
         choices.map(function (task) { return h("option", {key: task.selector, value: task.selector}, "Issue #" + task.issue_number + ": " + task.title); })))),
