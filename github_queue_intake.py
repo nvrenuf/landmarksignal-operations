@@ -1,4 +1,4 @@
-"""Manual, read-only GitHub Project #3 queue intake into native Hermes Triage.
+"""Manual, read-only selected GitHub project queue intake into native Hermes Triage.
 
 No model, specification, task claim, dispatcher, assignment or GitHub write.
 """
@@ -11,13 +11,14 @@ import re
 import sqlite3
 import subprocess
 import uuid
+from github_projects import DEFAULT_PROJECT, get_project, validate_source, source_key
 
 OWNER = 'nvrenuf'
 PROJECT = 3
 QUEUED = 'Queued for Jeeves'
 REVISION = '0c2ff854a5c5121c75ac0b0a35241a580ee27fb7'
 QUERY = '''query($owner:String!, $number:Int!, $cursor:String) {
-  user(login:$owner) { projectV2(number:$number) { id title
+  user(login:$owner) { projectV2(number:$number) { id title number owner { ... on User { login } }
     items(first:100, after:$cursor) { pageInfo { hasNextPage endCursor }
       nodes { id isArchived content { __typename ... on Issue {
         id number url title body updatedAt state repository { nameWithOwner }
@@ -48,18 +49,21 @@ def gh(arguments, payload=None):
     return result.stdout
 
 
-def read_queue(reader=gh):
+def read_queue(reader=gh, selector=DEFAULT_PROJECT):
+    approved = get_project(selector)
     if reader(['api', 'user', '--jq', '.login']).strip() != OWNER:
         raise RuntimeError('GitHub must authenticate as nvrenuf; no card created')
     result, seen, cursor = [], set(), None
     for _ in range(100):
         value = json.loads(reader(['api', 'graphql', '--input', '-'],
-                                 {'query': QUERY, 'variables': {'owner': OWNER, 'number': PROJECT, 'cursor': cursor}}))
+                                 {'query': QUERY, 'variables': {'owner': approved['owner'], 'number': approved['number'], 'cursor': cursor}}))
         if value.get('errors'):
             raise RuntimeError('GitHub Project read failed; no card created')
         project = ((value.get('data') or {}).get('user') or {}).get('projectV2')
-        if not project or not project.get('id'):
-            raise RuntimeError('Existing nvrenuf Project #3 is unavailable')
+        if (not project or project.get('id') != approved['id']
+                or project.get('number') != approved['number']
+                or (project.get('owner') or {}).get('login') != approved['owner']):
+            raise RuntimeError('Selected project identity differs or is unavailable')
         items = project['items']
         for item in items['nodes']:
             if item.get('isArchived'):
@@ -81,7 +85,7 @@ def read_queue(reader=gh):
                 continue
             seen.add(issue['id'])
             result.append({'project_id': project['id'], 'project_item_id': item['id'],
-                           'project_number': PROJECT, 'project_owner': OWNER,
+                           'project_number': approved['number'], 'project_owner': approved['owner'],
                            'source_status': QUEUED, 'issue': issue,
                            'project_fields': {v['field']['name']: next((v[k] for k in ('name','number','text','title') if k in v), None)
                                               for v in fields['nodes'] if v.get('field',{}).get('name') in ('Priority','Execution Order','Sprint')}})
@@ -103,18 +107,20 @@ def read_queue(reader=gh):
         record['github_blockers'] = [{'url': v['html_url'], 'title': v['title'], 'state': v['state']}
                                      for page in pages for v in page]
         record['source_body_sha256'] = hashlib.sha256((issue.get('body') or '').encode()).hexdigest()
+        validate_source(record, selector)
     return result
 
 
 def key(record):
-    return 'github-project3:' + record['project_id'] + ':' + record['issue']['id']
+    return source_key(record)
 
 
 def body(record, source_path):
     issue = record['issue']
     deps = record['github_blockers']
     return ('# GitHub work selected for Triage\n\nSource: ' + issue['url']
-            + '\nProject: https://github.com/nvrenuf/projects/3\nSource updated: ' + issue['updatedAt']
+            + '\nProject: ' + get_project('%s/%s' % (record['project_owner'], record['project_number']))['url']
+            + '\nSource updated: ' + issue['updatedAt']
             + '\nOriginal body SHA256: ' + record['source_body_sha256']
             + '\nSource snapshot: ' + str(source_path)
             + '\n\nIntake authorizes planning only. This card has not been approved for execution.\n'
@@ -125,8 +131,13 @@ def body(record, source_path):
             + (issue.get('body') or '(No body; clarification required.)') + '\n')
 
 
-def import_records(conn, kb, records, work_root):
+def import_records(conn, kb, records, work_root, selector=DEFAULT_PROJECT):
     """All native card creations in one transaction; pre-existing cards remain byte-for-byte equal."""
+    get_project(selector)
+    for record in records:
+        validate_source(record, selector)
+        if record.get('source_status') != QUEUED or record['issue'].get('state') != 'OPEN':
+            raise RuntimeError('Only queued open issues can be imported')
     conn.row_factory = sqlite3.Row
     before = {r['id']: dict(r) for r in conn.execute('SELECT * FROM tasks')}
     if any(r['status'] == 'running' for r in before.values()):
@@ -136,9 +147,14 @@ def import_records(conn, kb, records, work_root):
     try:
         for record in records:
             url = record['issue']['url']
-            matches = [r for r in before.values() if r.get('idempotency_key') == key(record)
-                       or (r.get('body') or '').split('\n', 1)[0].strip() == url
-                       or re.search(r'^Source: ' + re.escape(url) + r'$', r.get('body') or '', re.MULTILINE)]
+            # Modern cards are project-scoped. Legacy URL-only cards belong to
+            # Project #3; do not attach another project's item to those records.
+            matches = [dict(r) for r in conn.execute('SELECT * FROM tasks')
+                       if r['idempotency_key'] == key(record)
+                       or (selector == DEFAULT_PROJECT
+                           and not (r['idempotency_key'] or '').startswith(('github-project3:', 'github-project:'))
+                           and ((r['body'] or '').split('\n', 1)[0].strip() == url
+                                or re.search(r'^Source: ' + re.escape(url) + r'$', r['body'] or '', re.MULTILINE)))]
             if len(matches) > 1:
                 skipped.append({'issue_url': url, 'reason': 'Multiple existing linked cards; review before importing'})
                 continue
@@ -177,12 +193,13 @@ def import_records(conn, kb, records, work_root):
             'original_cards_preserved': True, 'execution_authorized': False}
 
 
-def run_intake(root):
+def run_intake(root, selector=DEFAULT_PROJECT):
+    approved = get_project(selector)
     from execution_guard_v1_final import ExecutionGuard
     from hermes_cli import kanban_db as kb
     batch = root / 'landmarksignal-v1/intake' / uuid.uuid4().hex
     def apply():
-        records = read_queue()
+        records = read_queue(selector=selector)
         board = root / 'kanban/boards/landmarksignal/kanban.db'
         if not board.is_file():
             raise RuntimeError('Existing LandmarkSignal board is missing')
@@ -191,8 +208,8 @@ def run_intake(root):
             source.backup(backup)
         # Existing SQLite connection is pinned explicitly; native create_task supplies card/event semantics. No schema init or migration.
         with closing(sqlite3.connect(board.resolve().as_uri() + '?mode=rw', uri=True, timeout=10)) as conn:
-            result = import_records(conn, kb, records, root / 'landmarksignal-v1/work/github-intake')
-        result.update(project_url='https://github.com/nvrenuf/projects/3', queued_count=len(records),
+            result = import_records(conn, kb, records, root / 'landmarksignal-v1/work/github-intake', selector)
+        result.update(project_url=approved['url'], project_selector=selector, queued_count=len(records),
                       batch_id=batch.name, backup=str(batch / 'board.before.db'),
                       completed_at=datetime.now(timezone.utc).isoformat(),
                       specification_run=False, model_calls=0, tasks_dispatched=0)

@@ -21,6 +21,8 @@ import status_sync as sync
 import evidence_mechanism as evidence
 import github_handoff_results as returns
 import landmarksignal_review_policy as policy
+from github_projects import get_project, source_key
+from test_github_intake import record as source_record
 from install_issue9_workflow import prepare_config, apply_changes
 
 class WorkflowTests(unittest.TestCase):
@@ -82,11 +84,13 @@ class WorkflowTests(unittest.TestCase):
     def test_return_reads_actual_native_run_and_is_idempotent_and_never_closes(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);work=root/'landmarksignal-v1/work/github-intake/abc';work.mkdir(parents=True)
-            (work/'github-source.json').write_text(json.dumps({'project_owner':'nvrenuf','project_number':3,'project_id':'P3','project_item_id':'PI9','issue':{'url':'https://github.com/nvrenuf/landmarksignal-operations/issues/9'}}))
+            source=source_record(9)
+            project_id=source['project_id']
+            (work/'github-source.json').write_text(json.dumps(source))
             (work/'test.py').write_text('print("test")')
             db=root/'kanban/boards/landmarksignal/kanban.db';db.parent.mkdir(parents=True)
             c=sqlite3.connect(db);c.executescript('CREATE TABLE tasks(id,title,status,workspace_path,idempotency_key); CREATE TABLE task_runs(id,task_id,profile,outcome,summary);')
-            c.execute('INSERT INTO tasks VALUES (?,?,?,?,?)',('t_root','Issue9','done',str(work),'github-project3:P3:I9'))
+            c.execute('INSERT INTO tasks VALUES (?,?,?,?,?)',('t_root','Issue9','done',str(work),source_key(source)))
             c.execute('INSERT INTO task_runs VALUES (?,?,?,?,?)',(42,'t_root','jeeves','completed','worker summary'));c.commit();c.close()
             result=returns.inspect_results(root)[0];self.assertEqual(result['run']['id'],42)
             calls=[];comments=[]
@@ -97,11 +101,11 @@ class WorkflowTests(unittest.TestCase):
                     q=payload['query']
                     if q.startswith('mutation'):return json.dumps({'data':{'updateProjectV2ItemFieldValue':{'projectV2Item':{'id':'PI9'}}}})
                     if 'fieldValueByName' in q:return json.dumps({'data':{'node':{'fieldValueByName':{'name':'Human Review'}}}})
-                    return json.dumps({'data':{'project':{'id':'P3','number':3,'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':'REVIEW','name':'Human Review'}]}]}},'item':{'project':{'id':'P3'},'content':{'url':result['issue_url']}}}})
+                    return json.dumps({'data':{'project':{'id':project_id,'number':3,'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':'REVIEW','name':'Human Review'}]}]}},'item':{'id':source['project_item_id'],'isArchived':False,'project':{'id':project_id},'content':source['issue']}}})
                 if args[1].endswith('/comments'):
                     if '--method' in args:comments.append(payload);return '{}'
                     return json.dumps([comments])
-                return '{"state":"open"}'
+                return json.dumps({'state':'open','node_id':source['issue']['id'],'html_url':result['issue_url'],'number':9})
             for _ in range(2):self.assertEqual(returns.return_result(root,'t_root',result['snapshot_sha256'],reader)['status'],'Human Review')
             self.assertEqual(len(comments),1)
             self.assertFalse(any('state' in (p or {}) for a,p in calls))

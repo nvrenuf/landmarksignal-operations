@@ -10,11 +10,12 @@ from types import SimpleNamespace
 
 import github_queue_intake as intake
 import install_github_intake as installer
+from github_projects import get_project
 
 
 def record(n=1):
     body = 'Original requirements: do one bounded task. Depends on #3.'
-    return {'project_id':'P_3','project_item_id':'PI_'+str(n),'project_number':3,'project_owner':'nvrenuf',
+    return {'project_id':get_project()['id'],'project_item_id':'PI_'+str(n),'project_number':3,'project_owner':'nvrenuf',
             'source_status':'Queued for Jeeves','source_body_sha256':hashlib.sha256(body.encode()).hexdigest(),
             'github_blockers':[{'url':'https://github.com/nvrenuf/repo/issues/3','title':'Prerequisite','state':'open'}],
             'issue':{'__typename':'Issue','id':'I_'+str(n),'number':n,'title':'Task '+str(n),
@@ -42,7 +43,7 @@ class ReadTests(unittest.TestCase):
                   'fieldValues':{'pageInfo':{'hasNextPage':False},'nodes':[{'name':'Queued for Jeeves','field':{'name':'Status'}}]}}
             nodes=[item, {**item,'id':'archived','isArchived':True}, {**item,'id':'draft','content':{'__typename':'DraftIssue'}},
                    {**item,'id':'otherstatus','fieldValues':{'pageInfo':{'hasNextPage':False},'nodes':[{'name':'Defined','field':{'name':'Status'}}]}}]
-            return json.dumps({'data':{'user':{'projectV2':{'id':'P_3','title':'Project','items':{
+            return json.dumps({'data':{'user':{'projectV2':{'id':get_project()['id'],'number':3,'owner':{'login':'nvrenuf'},'title':'Project','items':{
                 'nodes':nodes,'pageInfo':{'hasNextPage':n==1,'endCursor':'cursor1'}}}}}})
         actual=intake.read_queue(reader)
         self.assertEqual([r['issue']['number'] for r in actual],[1,2])
@@ -178,7 +179,7 @@ class IntakeBoundaryTests(dashboard_tests.LaunchTests):
     def test_batch_import_calls_only_pinned_root_and_no_worker_spawn(self):
         with patch.object(intake, 'run_intake', return_value={'created': []}) as run, patch.object(self.api.subprocess, 'Popen') as spawn:
             self.assertEqual(self.api.github_intake(self.request), {'created': []})
-            run.assert_called_once_with(self.root)
+            run.assert_called_once_with(self.root, selector='nvrenuf/3')
             spawn.assert_not_called()
 
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -1,0 +1,190 @@
+"""Isolated fixtures only: never import cards or post evidence to live services."""
+import copy
+from contextlib import closing
+import json
+import os
+from pathlib import Path
+import sqlite3
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+if os.name == 'nt':
+    sys.path.insert(0, str(Path(os.environ['LOCALAPPDATA'])/'hermes/hermes-agent'))
+    import hermes_bootstrap
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import github_projects as projects
+import github_queue_intake as intake
+import github_handoff_results as returns
+from test_github_intake import record
+import test_github_intake as intake_tests
+import test_jeeves_dashboard as dashboard_tests
+
+
+def source(number=3, issue=1):
+    r=record(issue)
+    r.update(project_number=number, project_id=projects.get_project(f'nvrenuf/{number}')['id'],
+             project_item_id=f'PI{number}_{issue}',
+             project_fields={'Priority':'P1','Execution Order':7,'Sprint':'Sprint 001'})
+    return r
+
+
+class SelectionTests(unittest.TestCase):
+    def test_unknown_source_refuses_before_read(self):
+        for selector in ('nvrenuf/5','other/3','',None,3):
+            with self.subTest(selector=selector), self.assertRaises(RuntimeError):
+                intake.read_queue(lambda *args: self.fail('Unexpected GitHub call'), selector)
+
+    def test_queue_isolation_identity_and_closed_filter(self):
+        for n in (3,4):
+            calls=[]
+            def reader(args,payload=None):
+                calls.append((args,payload))
+                if args[1]=='user': return 'nvrenuf'
+                if args[1]!='graphql': return json.dumps([[{'html_url':'https://github.com/nvrenuf/repo/issues/3','state':'open','title':'Dependency'}]])
+                self.assertEqual(payload['variables']['number'],n)
+                item={'id':source(n)['project_item_id'],'isArchived':False,'content':source(n)['issue'],
+                      'fieldValues':{'pageInfo':{'hasNextPage':False},'nodes':[
+                          {'name':'Queued for Jeeves','field':{'name':'Status'}},
+                          {'name':'P1','field':{'name':'Priority'}},
+                          {'number':7,'field':{'name':'Execution Order'}},
+                          {'title':'Sprint 001','field':{'name':'Sprint'}}]}}
+                return json.dumps({'data':{'user':{'projectV2':{
+                    'id':projects.get_project(f'nvrenuf/{n}')['id'],'number':n,'owner':{'login':'nvrenuf'},
+                    'items':{'pageInfo':{'hasNextPage':False},'nodes':[item,
+                        {**item,'content':{**item['content'],'state':'CLOSED'}}]}}}}})
+            result=intake.read_queue(reader,f'nvrenuf/{n}')
+            self.assertEqual(len(result),1)
+            self.assertEqual(result[0]['project_number'],n)
+            self.assertEqual(result[0]['project_fields'],source(n)['project_fields'])
+            self.assertEqual(result[0]['github_blockers'][0]['title'],'Dependency')
+            def wrong(args,payload=None):
+                text=reader(args,payload)
+                return text.replace(projects.get_project(f'nvrenuf/{n}')['id'],'UNAPPROVED')
+            with self.assertRaisesRegex(RuntimeError,'identity'): intake.read_queue(wrong,f'nvrenuf/{n}')
+
+
+class ProjectImportTests(intake_tests.ImportTests):
+    def test_same_issue_two_projects_duplicate_batch_and_archived_records(self):
+        a=source(3); b=source(4)
+        first=intake.import_records(self.conn,self.kb,[a,a],self.root)
+        self.assertEqual(len(first['created']),1)
+        self.assertEqual(len(first['existing']),1)
+        second=intake.import_records(self.conn,self.kb,[b],self.root,'nvrenuf/4')
+        self.assertEqual(len(second['created']),1)
+        self.conn.execute('ALTER TABLE tasks ADD COLUMN archived_at TEXT')
+        self.conn.execute("UPDATE tasks SET archived_at='2026-10-08',status='done'")
+        self.conn.commit()
+        before=[dict(r) for r in self.conn.execute('SELECT * FROM tasks')]
+        for selector,r in (('nvrenuf/3',a),('nvrenuf/4',b)):
+            result=intake.import_records(self.conn,self.kb,[r],self.root,selector)
+            self.assertEqual(len(result['existing']),1);self.assertFalse(result['created'])
+        self.assertEqual(before,[dict(r) for r in self.conn.execute('SELECT * FROM tasks')])
+        self.assertEqual(intake.key(a),'github-project3:'+a['project_id']+':'+a['issue']['id'])
+        self.assertNotEqual(intake.key(a),intake.key(b))
+
+    def test_mixed_or_invalid_batch_refuses_without_any_changes(self):
+        for records in ([source(3),source(4)],[{**source(3),'project_id':'wrong'}],
+                        [{**source(3),'source_body_sha256':'changed'}]):
+            with self.assertRaises(RuntimeError):intake.import_records(self.conn,self.kb,records,self.root)
+            self.assertEqual(self.conn.execute('SELECT count(*) FROM tasks').fetchone()[0],1)
+            self.assertFalse(list(self.root.iterdir()))
+
+
+class ResultTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
+        self.db=self.root/'kanban/boards/landmarksignal/kanban.db';self.db.parent.mkdir(parents=True)
+        self.sources={};self.comments=[];self.calls=[];self.bad=None
+        with closing(sqlite3.connect(self.db)) as conn, conn:
+            conn.executescript('CREATE TABLE tasks(id,title,status,workspace_path,idempotency_key,archived_at); CREATE TABLE task_runs(id,task_id,profile,outcome,summary);')
+            for n in (3,4):
+                r=source(n);self.sources[n]=r
+                work=self.root/f'landmarksignal-v1/work/github-intake/{n}';work.mkdir(parents=True)
+                (work/'github-source.json').write_text(json.dumps(r))
+                (work/'output.md').write_text('Isolated fixture artifact')
+                conn.execute('INSERT INTO tasks VALUES (?,?,?,?,?,?)',(f't{n}','Fixture','review',str(work),intake.key(r),None))
+                conn.execute('INSERT INTO task_runs VALUES (?,?,?,?,?)',(n,f't{n}','jeeves','review','Isolated summary'))
+
+    def tearDown(self): self.temp.cleanup()
+
+    def reader(self,args,payload=None):
+        self.calls.append((args,payload))
+        r=self.sources[self.number]
+        if args[1]=='user':return 'nvrenuf'
+        if args[1]=='graphql':
+            q=payload['query']
+            if q.startswith('mutation'):
+                self.assertEqual(payload['variables'],{'project':r['project_id'],'item':r['project_item_id'],'field':'STATUS','option':self.status})
+                return json.dumps({'data':{}})
+            if 'fieldValueByName' in q:return json.dumps({'data':{'node':{'fieldValueByName':{'name':self.status}}}})
+            data={'project':{'id':r['project_id'],'number':self.number,'owner':{'login':'nvrenuf'},
+                'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':self.status,'name':self.status}]}]}},
+                'item':{'id':r['project_item_id'],'isArchived':False,'project':{'id':r['project_id']},'content':copy.deepcopy(r['issue'])}}
+            if self.bad=='item':data['item']['id']='wrong'
+            if self.bad=='project':data['item']['project']['id']='wrong'
+            if self.bad=='issue':data['item']['content']['id']='wrong'
+            if self.bad=='repo':data['item']['content']['repository']['nameWithOwner']='other/repo'
+            if self.bad=='archived':data['item']['isArchived']=True
+            return json.dumps({'data':data})
+        endpoint=f"repos/{r['issue']['repository']['nameWithOwner']}/issues/{r['issue']['number']}"
+        self.assertIn(args[1],(endpoint,endpoint+'/comments'))
+        if args[1].endswith('/comments'):
+            if '--method' in args:self.comments.append(payload);return '{}'
+            return json.dumps([self.comments])
+        return json.dumps({'state':'open','node_id':'wrong' if self.bad=='rest' else r['issue']['id'],
+                           'number':r['issue']['number'],'html_url':r['issue']['url']})
+
+    def test_exact_routing_both_projects_review_and_blocked_idempotent(self):
+        for n in (3,4):
+            self.number=n
+            for status in ('Human Review','Blocked'):
+                self.status=status
+                with closing(sqlite3.connect(self.db)) as conn, conn:conn.execute('UPDATE tasks SET status=? WHERE id=?',('blocked' if status=='Blocked' else 'review',f't{n}'))
+                rows=returns.inspect_results(self.root,f'nvrenuf/{n}')
+                self.assertEqual([r['task_id'] for r in rows],[f't{n}'])
+                with closing(sqlite3.connect(self.db)) as conn:
+                    before=[conn.execute('SELECT * FROM '+table).fetchall() for table in ('tasks','task_runs')]
+                for _ in range(2):returns.return_result(self.root,f't{n}',rows[0]['snapshot_sha256'],self.reader,f'nvrenuf/{n}')
+                with closing(sqlite3.connect(self.db)) as conn:
+                    self.assertEqual(before,[conn.execute('SELECT * FROM '+table).fetchall() for table in ('tasks','task_runs')])
+        self.assertEqual(len(self.comments),4)
+        self.assertFalse(any('state' in (p or {}) for a,p in self.calls))
+        with closing(sqlite3.connect(self.db)) as conn:self.assertEqual(conn.execute('SELECT count(*) FROM task_runs').fetchone()[0],2)
+
+    def test_remote_mismatches_reject_before_any_write(self):
+        self.number=4;self.status='Human Review'
+        row=returns.inspect_results(self.root,'nvrenuf/4')[0]
+        for self.bad in ('item','project','issue','repo','archived','rest'):
+            self.calls=[]
+            with self.subTest(bad=self.bad),self.assertRaises(RuntimeError):
+                returns.return_result(self.root,'t4',row['snapshot_sha256'],self.reader,'nvrenuf/4')
+            self.assertFalse(any('--method' in a or (p or {}).get('query','').startswith('mutation') for a,p in self.calls))
+
+    def test_wrong_selection_stale_snapshot_and_local_binding_reject(self):
+        row=returns.inspect_results(self.root,'nvrenuf/4')[0]
+        with self.assertRaises(RuntimeError):returns.return_result(self.root,'t4',row['snapshot_sha256'],self.reader,'nvrenuf/3')
+        work=Path(row['workspace']);(work/'output.md').write_text('changed')
+        with self.assertRaises(RuntimeError):returns.return_result(self.root,'t4',row['snapshot_sha256'],self.reader,'nvrenuf/4')
+        self.assertEqual(self.calls,[])
+        with closing(sqlite3.connect(self.db)) as conn, conn:conn.execute("UPDATE tasks SET idempotency_key='github-project:wrong' WHERE id='t4'")
+        with self.assertRaisesRegex(RuntimeError,'Card/source'):returns.inspect_results(self.root,'nvrenuf/4')
+
+
+class ApiTests(dashboard_tests.LaunchTests):
+    def test_catalog_and_selected_import_results(self):
+        self.assertEqual(len(self.api.github_projects(self.request)['projects']),2)
+        for selector in projects.PROJECTS:
+            self.request.query_params={'project':selector}
+            with patch.object(intake,'run_intake',return_value={}) as run:
+                self.api.github_intake(self.request);run.assert_called_once_with(self.root,selector=selector)
+            with patch.object(returns,'inspect_results',return_value=[]) as inspect:
+                self.api.github_results(self.request);inspect.assert_called_once_with(self.root,selector=selector)
+        self.request.query_params={'project':'nvrenuf/99'}
+        with patch.object(intake,'run_intake') as run, self.assertRaises(Exception):self.api.github_intake(self.request)
+        run.assert_not_called()
+
+
+if __name__=='__main__':unittest.main(verbosity=2)

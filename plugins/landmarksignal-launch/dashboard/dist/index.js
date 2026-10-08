@@ -5,21 +5,22 @@
   var R = sdk.React, h = R.createElement;
   var base = "/api/plugins/landmarksignal-launch";
   function api(path, init, task) { return sdk.fetchJSON(base + path + "?profile=jeeves&task=" + encodeURIComponent(task || "issue7-status-mapping"), init); }
-  function IntakePanel() {
-    var a = R.useState(false), busy = a[0], setBusy = a[1];
+  function projectApi(path, init, project) { return sdk.fetchJSON(base + path + "?profile=jeeves&project=" + encodeURIComponent(project), init); }
+  function IntakePanel(props) {
+    var busy = props.busy, setBusy = props.setBusy;
     var b = R.useState(null), result = b[0], setResult = b[1];
     var c = R.useState(""), error = c[0], setError = c[1];
     async function importQueue() {
       if (busy) return;
       setBusy(true); setError(""); setResult(null);
-      try { setResult(await api("/github-intake", {method: "POST"})); }
+      try { setResult(await projectApi("/github-intake", {method: "POST"}, props.project)); }
       catch (err) { setError(String(err.message || err)); }
       finally { setBusy(false); }
     }
     return h("section", {style: {border: "1px solid #A9B7A4", padding: "16px", marginBottom: "16px", borderRadius: "8px"}},
       h("strong", null, "GitHub → Hermes Triage"),
-      h("p", null, "Select issues in GitHub Project #3 using Queued for Jeeves, then import the batch here."),
-      h("p", null, "Imports preserve original requirements and recorded GitHub dependencies. Specification and execution use the existing Kanban controls; this button starts neither."),
+      h("p", null, "Set issues in the selected source project to Queued for Jeeves, then import that project's batch here."),
+      h("p", null, "Imports preserve requirements and GitHub dependencies in unassigned Triage. Native preparation may reach Ready and launch workers; import does not add a separate execution approval gate."),
       h("button", {onClick: importQueue, disabled: busy, style: {padding: "8px 14px", cursor: "pointer"}}, busy ? "Reading GitHub and importing…" : "Import queued work"),
       h("a", {href: "/kanban?profile=jeeves&board=landmarksignal", style: {marginLeft: "16px"}}, "Open LandmarkSignal Kanban"),
       error ? h("p", {role: "alert"}, error) : null,
@@ -30,16 +31,17 @@
         result.skipped.map(function (item) { return h("p", {key: item.issue_url}, item.issue_url + ": " + item.reason); }),
         h("small", null, "Batch report: " + result.batch_id + ". Existing cards preserved. No execution approval granted.")) : null);
   }
-  function ResultPanel() {
+  function ResultPanel(props) {
     var a=R.useState([]), rows=a[0], setRows=a[1];
     var b=R.useState(""), message=b[0], setMessage=b[1];
-    var c=R.useState(false), busy=c[0], setBusy=c[1];
-    async function refresh() { try { setRows((await api("/github-results")).results); } catch(e) { setMessage(e.message); } }
+    var busy=props.busy, setBusy=props.setBusy;
+    async function refresh() { try { setRows((await projectApi("/github-results", undefined, props.project)).results); } catch(e) { setMessage(e.message); } }
     R.useEffect(function(){ refresh(); }, []);
     async function send(row) {
+      if (busy) return;
       setBusy(true); setMessage("");
       try {
-        var result=await api("/github-return", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task_id:row.task_id,snapshot_sha256:row.snapshot_sha256})});
+        var result=await projectApi("/github-return", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task_id:row.task_id,snapshot_sha256:row.snapshot_sha256})}, props.project);
         setMessage(result.issue_url+" → "+result.status+". Human acceptance is still required.");
       } catch(e) { setMessage(e.message); } finally { setBusy(false); }
     }
@@ -51,6 +53,27 @@
         h("details",null,h("summary",null,"Inspect return evidence"),h("pre",{style:{whiteSpace:"pre-wrap"}},JSON.stringify(row,null,2))),
         h("button",{disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"},onClick:function(){send(row);}},"Send results to GitHub "+row.proposed_status)); }),
       message?h("p",{role:"status"},message):null);
+  }
+  function ProjectPanel() {
+    var a=R.useState([]), projects=a[0], setProjects=a[1];
+    var b=R.useState(""), selected=b[0], setSelected=b[1];
+    var c=R.useState(""), error=c[0], setError=c[1];
+    var d=R.useState(false), busy=d[0], setBusy=d[1];
+    R.useEffect(function () {
+      var alive=true;
+      api("/github-projects").then(function (catalog) {
+        if (alive) { setProjects(catalog.projects); setSelected(catalog.default); }
+      }).catch(function (e) { if (alive) setError(e.message); });
+      return function () { alive=false; };
+    }, []);
+    var active=projects.find(function (p) { return p.selector===selected; });
+    return h("section", null,
+      h("label", null, "Source GitHub project ", h("select", {value:selected, disabled:busy, onChange:function(e){setSelected(e.target.value);}},
+        projects.map(function(p){return h("option",{key:p.selector,value:p.selector},p.title+" · "+p.owner+" #"+p.number);}))),
+      active ? h("p", null, "Active source: ", h("a",{href:active.url,target:"_blank",rel:"noopener noreferrer"},active.title+" (#"+active.number+")")) : null,
+      error ? h("p",{role:"alert"},error) : null,
+      active ? h(IntakePanel,{key:"intake:"+selected,project:selected,busy:busy,setBusy:setBusy}) : null,
+      active ? h(ResultPanel,{key:"results:"+selected,project:selected,busy:busy,setBusy:setBusy}) : null);
   }
   function Panel() {
     var choicesState = R.useState([]), choices = choicesState[0], setChoices = choicesState[1];
@@ -103,8 +126,7 @@
     var style = {border: "1px solid #A9B7A4", borderRadius: "8px", padding: "16px", marginBottom: "16px"};
     var button = {padding: "8px 14px", marginRight: "8px", border: "1px solid #A9B7A4", borderRadius: "5px", cursor: "pointer"};
     return h("section", {style: style},
-      h(IntakePanel, null),
-      h(ResultPanel, null),
+      h(ProjectPanel, null),
       h("strong", null, "Jeeves · Approved document tasks"),
       h("p", null, h("label", null, "Task ", h("select", {value: selected, onChange: changeTask, disabled: busy},
         choices.map(function (task) { return h("option", {key: task.selector, value: task.selector}, "Issue #" + task.issue_number + ": " + task.title); })))),

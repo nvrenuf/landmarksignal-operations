@@ -171,15 +171,31 @@ def document(request: Request):
     return {"filename": target.name, "markdown": target.read_text(encoding="utf-8")}
 
 
+def project_selection(request):
+    from github_projects import DEFAULT_PROJECT, get_project
+    try:
+        return get_project(request.query_params.get('project', DEFAULT_PROJECT))['selector']
+    except RuntimeError as error:
+        raise HTTPException(409, str(error))
+
+
+@router.get('/github-projects')
+def github_projects(request: Request):
+    require_jeeves(request)
+    from github_projects import PROJECTS, DEFAULT_PROJECT, get_project
+    return {'projects': [get_project(key) for key in PROJECTS], 'default': DEFAULT_PROJECT}
+
+
 @router.post('/github-intake')
 def github_intake(request: Request):
     require_jeeves(request)
     if request.headers.get('origin') != str(request.base_url).rstrip('/'):
         raise HTTPException(403, 'Import from this dashboard page')
     from github_queue_intake import run_intake
+    selected = project_selection(request)
     root, _, _ = paths()
     try:
-        return run_intake(root)
+        return run_intake(root, selector=selected)
     except Exception as error:
         # Never return provider/CLI errors containing keys. Expected refusal text is local.
         if isinstance(error, RuntimeError):
@@ -191,9 +207,10 @@ def github_intake(request: Request):
 def github_results(request: Request):
     require_jeeves(request)
     from github_handoff_results import inspect_results
+    selected = project_selection(request)
     root, _, _ = paths()
     try:
-        return {'results': inspect_results(root)}
+        return {'results': inspect_results(root, selector=selected), 'project_selector': selected}
     except RuntimeError as error:
         raise HTTPException(409, str(error))
 
@@ -209,10 +226,11 @@ def github_return(request: Request, payload: ResultReturn):
     if request.headers.get('origin') != str(request.base_url).rstrip('/'):
         raise HTTPException(403, 'Return results from this dashboard page')
     from github_handoff_results import return_result
+    selected = project_selection(request)
     root, _, _ = paths()
     try:
         from execution_guard_v1_final import ExecutionGuard
         return ExecutionGuard('9', 'github-result-return', timeout=0).execute(
-            lambda: return_result(root, payload.task_id, payload.snapshot_sha256))
+            lambda: return_result(root, payload.task_id, payload.snapshot_sha256, selector=selected))
     except Exception as error:
         raise HTTPException(409, str(error) if isinstance(error, RuntimeError) else 'Result return stopped: '+type(error).__name__)
