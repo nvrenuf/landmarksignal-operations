@@ -9,7 +9,7 @@ if ($identity.User.Value -ne $ExpectedUserSid -or
 }
 $report = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Jeeves-Read-Boundary-Admin.txt'
 $root = Join-Path $env:LOCALAPPDATA 'hermes'
-$profile = Join-Path $root 'profiles\jeeves'
+$jeevesProfileDirectory = Join-Path $root 'profiles\jeeves'
 $python = Join-Path $root 'hermes-agent\venv\Scripts\python.exe'
 $acls = @{}
 $directoryAcls = @{}
@@ -19,9 +19,9 @@ $transcribing = $false
 try {
     Start-Transcript -LiteralPath $report -Force | Out-Null
     $transcribing = $true
-    $paths = @(Join-Path $profile 'plugins\landmarksignal-execution\policy.py')
-    foreach ($home in @($root, $profile)) {
-        $copy = Join-Path $home 'plugins\landmarksignal-launch\dashboard\runner\landmarksignal_policy.py'
+    $paths = @(Join-Path $jeevesProfileDirectory 'plugins\landmarksignal-execution\policy.py')
+    foreach ($profileDirectory in @($root, $jeevesProfileDirectory)) {
+        $copy = Join-Path $profileDirectory 'plugins\landmarksignal-launch\dashboard\runner\landmarksignal_policy.py'
         if (Test-Path -LiteralPath $copy -PathType Leaf) { $paths += $copy }
     }
     foreach ($path in $paths) {
