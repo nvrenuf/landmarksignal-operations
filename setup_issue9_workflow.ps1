@@ -53,6 +53,8 @@ try {
     if ($admin.ExitCode -ne 0) { throw 'Elevated policy repair stopped. Dashboard left running; return the reports.' }
     & $python -B (Join-Path $PSScriptRoot 'verify_issue9_hooks.py')
     if ($LASTEXITCODE -ne 0) { throw 'Installed hook verification stopped. Return the report.' }
+    & $python -B (Join-Path $PSScriptRoot 'verify_issue9_results.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Normal-user results load failed. Return the report.' }
     Write-Host '=== Reload existing standalone browser dashboard ==='
     $current = Get-CimInstance Win32_Process -Filter "ProcessId=$dashboardPid"
     if (!$current -or $current.CreationDate -ne $processCreated) {

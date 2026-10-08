@@ -19,3 +19,7 @@ The return button reports worker claims and local file inventory as awaiting acc
 Run setup_issue9_workflow.ps1 from a pinned checkout. It runs the ten correction tests, elevates only installation, verifies actual installed pre-tool hooks in fresh default/Jeeves Python processes, and reloads only the normal-user standalone browser dashboard on 9119. Desktop/gateway/model/tunnels are not restarted. No task or GitHub write is performed by setup.
 
 Local validation: ten correction tests and fifteen existing intake/dashboard tests pass; JavaScript syntax and Python compilation pass. Windows ACL/config installation, live GitHub schema/authentication, actual installed hooks and a subsequent real worker round trip are verified on Lee's laptop, not claimed from the Linux test environment. PR remains unmerged.
+
+## New-module permission correction
+
+The first Windows install created github_handoff_results.py with administrator ownership and inherited OWNER RIGHTS, leaving the normal dashboard account unable to read it. The maintenance step now adds only a ReadAndExecute allow ACE for the expected Lee SID on manifest entries that were newly introduced. Existing owner and other access rules remain. Setup directly imports and inspects the installed results module as the normal user before dashboard reload. The review buttons also have explicit visible styling.

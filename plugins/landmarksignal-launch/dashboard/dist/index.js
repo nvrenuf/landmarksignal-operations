@@ -46,10 +46,10 @@
     return h("section",{style:{border:"1px solid #A9B7A4",padding:"16px",marginBottom:"16px"}},
       h("strong",null,"Hermes → GitHub review"),
       h("p",null,"Return worker summaries and artifact evidence to GitHub. This does not accept or close an issue."),
-      h("button",{onClick:refresh,disabled:busy},"Refresh results"),
+      h("button",{onClick:refresh,disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"}},"Refresh results"),
       rows.map(function(row){ return h("div",{key:row.task_id},h("p",null,row.title+" · "+row.status),
         h("details",null,h("summary",null,"Inspect return evidence"),h("pre",{style:{whiteSpace:"pre-wrap"}},JSON.stringify(row,null,2))),
-        h("button",{disabled:busy,onClick:function(){send(row);}},"Send results to GitHub "+row.proposed_status)); }),
+        h("button",{disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"},onClick:function(){send(row);}},"Send results to GitHub "+row.proposed_status)); }),
       message?h("p",{role:"status"},message):null);
   }
   function Panel() {

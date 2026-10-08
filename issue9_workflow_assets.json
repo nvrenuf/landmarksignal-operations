@@ -11,10 +11,11 @@
   {
     "source": "plugins/landmarksignal-launch/dashboard/dist/index.js",
     "target": "plugins/landmarksignal-launch/dashboard/dist/index.js",
-    "new_sha256": "11de6d0c604e6ddec21eea2da62be91d10c518c0f9339a5b9e72accbb1426b10",
+    "new_sha256": "3b98dfe628086099104e6bbc45ea9e4f894ab78c5c0c92a68e05d3b295f6df77",
     "old_sha256": "33f42215985c2040220dd407719898afafd793b51201136648380ccb20b03e69",
     "allowed_old_sha256": [
-      "33f42215985c2040220dd407719898afafd793b51201136648380ccb20b03e69"
+      "33f42215985c2040220dd407719898afafd793b51201136648380ccb20b03e69",
+      "11de6d0c604e6ddec21eea2da62be91d10c518c0f9339a5b9e72accbb1426b10"
     ]
   },
   {

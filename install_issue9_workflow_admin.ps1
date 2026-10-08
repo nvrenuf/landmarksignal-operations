@@ -32,7 +32,7 @@ try {
     $securityBackup = @{}
     foreach ($path in $acls.Keys) { $securityBackup[$path] = $acls[$path].Sddl }
     $securityBackup | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $logDirectory 'file-acls.before.json') -Encoding UTF8
-    Write-Host '=== Elevated maintenance: policy files only ==='
+    Write-Host '=== Elevated maintenance: workflow files only ==='
     $helper = Join-Path $PSScriptRoot 'install_issue9_workflow.py'
     $installation = Start-Process -FilePath $python -Wait -PassThru -NoNewWindow `
         -ArgumentList @('-B', ('"' + $helper + '"')) `
@@ -41,6 +41,22 @@ try {
     Get-Content -LiteralPath (Join-Path $logDirectory 'stdout.txt') | Write-Host
     Get-Content -LiteralPath (Join-Path $logDirectory 'stderr.txt') | Write-Host
     if ($installation.ExitCode -ne 0) { throw "Policy installer exit code: $($installation.ExitCode)" }
+    # Newly added modules inherit OWNER RIGHTS for their administrator creator.
+    # Permit the normal runtime account to read them; retain owner and all other ACEs.
+    foreach ($entry in @($manifest | Where-Object { $null -eq $_.old_sha256 })) {
+        $path = Join-Path $root $entry.target
+        if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw "Installed module missing: $path" }
+        $security = Get-Acl -LiteralPath $path
+        $userSid = [Security.Principal.SecurityIdentifier]::new($ExpectedUserSid)
+        $rule = [Security.AccessControl.FileSystemAccessRule]::new(
+            $userSid, [Security.AccessControl.FileSystemRights]::ReadAndExecute,
+            [Security.AccessControl.AccessControlType]::Allow)
+        $security.AddAccessRule($rule) | Out-Null
+        Set-Acl -LiteralPath $path -AclObject $security
+        $acls[$path] = $security
+    }
+    Write-Host 'PASS: newly added modules grant the normal runtime account read/execute access.'
+
 } catch {
     $failed = $true
     Write-Host ('STOPPED: ' + $_.Exception.Message)
@@ -65,7 +81,7 @@ try {
             Write-Host "DIRECTORY ACL CHANGED: $directory"
         }
     }
-    if (!$failed) { Write-Host 'PASS: original file and directory protections preserved.' }
+    if (!$failed) { Write-Host 'PASS: original protections preserved; new-module runtime read access verified.' }
     Write-Host 'No Hermes runtime, dashboard, model, task or SSH tunnel was launched by this elevated step.'
     if ($transcribing) { Stop-Transcript | Out-Null }
 }
