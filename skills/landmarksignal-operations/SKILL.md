@@ -1,29 +1,31 @@
 ---
 name: landmarksignal-operations
-description: "Follow LandmarkSignal's approved GitHub-to-Hermes workflow, issue traceability, manual execution approval, review and evidence rules. Use for Jeeves operations, selected-issue handoff and Kanban work."
+description: "Operate LandmarkSignal's GitHub-to-Hermes intake, native Kanban work, human review and explicit evidence return. Use for Jeeves coordination, selected GitHub issues and the LandmarkSignal board."
 ---
 
 # LandmarkSignal Operations
 
-Use `nvrenuf/landmarksignal-operations`, GitHub Project #3 and the existing `landmarksignal` Hermes board. Lee has final priority, scope, approval and acceptance authority. ChatGPT advises; Jeeves coordinates approved work. Do not create replacement projects, fields or boards.
+Use repository `nvrenuf/landmarksignal-operations`, GitHub Project #3 (`https://github.com/nvrenuf/projects/3`) and the existing `landmarksignal` Hermes board. Lee controls scope, Priority, Execution Order, Sprint, acceptance, merges and deployments. Do not create replacement boards or fields.
 
-Read the current repository operating model, execution contract and `docs/GITHUB_HERMES_WORKFLOW.md` before changing workflow. Treat the four references below as the current local routes; other retained references are historical until separately reconciled. If they conflict with current Lee decisions or repository policy, report the conflict rather than widening authority.
+Follow the current repository `docs/GITHUB_HERMES_WORKFLOW.md`, `docs/JEEVES_EXECUTION_CONTRACT.md`, `docs/KANBAN_EXECUTION_POLICY.md` and `docs/HERMES_FOLDER_MAP.md`. Read the matching local reference below. Treat other retained skill references as historical; report conflicts rather than following obsolete commands.
 
-| Task | Read |
+| Operation | Read |
 |---|---|
-| Selected GitHub issue, Triage, specification and manual release | `references/hermes-kanban.md` |
-| Execution approval, guards, child boundaries | `references/hermes-kanban-safety.md` |
-| Canonical guard implementation and evidence limits | `references/execution-guard-v1.md` |
-| Review existing acceptance evidence | `references/acceptance-test.md` |
+| Import queued issues and native Kanban lifecycle | `references/hermes-kanban.md` |
+| Tools, scope, dispatch and review boundaries | `references/hermes-kanban-safety.md` |
+| Foreground guard and its evidence limits | `references/execution-guard-v1.md` |
+| Acceptance evidence and remaining gaps | `references/acceptance-test.md` |
 
-Use the enabled GitHub skill for `gh` syntax and its matching reference. Verify the authenticated account is nvrenuf and read exact current issue/repository state before a permitted operation. Do not print credentials or change login/scopes automatically. Existing CLI credentials do not imply agent shell permission.
+Verify the authenticated GitHub account is nvrenuf and freshly read the exact repository/issue before permitted GitHub operations. Use the installed GitHub skill for syntax. Do not print credentials or change authentication automatically.
 
-Preserve source issue URL, original requirements and source version/hash in any handoff; do not replace the source with model-written scope. Importing a task permits only the explicitly approved intake, not implementation, worker creation or child work.
+Lee selects Project Status **Queued for Jeeves**, then clicks **Import queued work**. The existing importer pulls the eligible batch into unassigned Triage, preserving original requirements, source identity and dependencies. Repeated imports reuse existing identities, including archived cards. Do not reset archived cards or create duplicates to replay work.
 
-Do not call shell, task mutation, native Specify/Decompose or ordinary dispatch to bypass the installed execution policy. Allow normal dependency-based To-do promotion to Ready. Ready is eligibility, not execution permission: wait for Lee's exact-scope Approve and run action, with automatic worker dispatch disabled and the launch boundary verified. Scheduled waits on time and does not grant approval. Reusable guarded intake/specification is pending. Use only installed source-reviewed document contracts in Jeeves Launch for current operational runs.
+Use ordinary native Hermes project tools within the task's authorized scope. Hermes may specify/decompose work and resolve dependencies. To-do may auto-promote to Ready; Ready is the native dispatch queue and can launch automatically. Do not claim a separate approval stop exists there. Import is planning selection, not unlimited execution authorization. If a task lacks required authorization, report its blocker through the permitted native lifecycle; do not bypass it or invent approval.
 
-Keep one guarded execution at a time, distinct child approvals, Review before human completion and immutable original evidence. GitHub status is never permission. Do not change Priority, Execution Order, Sprint, authorization, close issues, merge or deploy without the applicable explicit approval.
+Workers call `kanban_request_review` and stop at Review. Workers must never call `kanban_complete`, including after verbal acceptance. Lee uses dashboard **Complete** after inspecting the actual deliverables. Lee explicitly clicks **Send results to GitHub Human Review/Blocked** to return actual run evidence. Do not claim automatic synchronization, file uploads, issue closure or acceptance from a worker summary.
 
-Preserve existing Community Capital DGX production services. Do not restart, rebind, replace, interrupt, change credentials or expand infrastructure access as part of handoff. Do not change models or deploy the planned roster without separately scoped approval.
+Preserve Priority, Execution Order, Sprint and original requirements. Obtain explicit approval for scope expansion, merges, deployments, external costs or production/security changes. Parent work does not automatically authorize unrestricted child work. Ordinary native dispatch is not covered by the separate Issue #19 foreground mutex proof.
 
-Report exact blockers and distinguish proposed workflow, available native features and validated execution. Do not claim a skill change installs a connector, grants tools or establishes enforcement.
+Preserve existing DGX production services. Do not restart/rebind/replace services, change models, deploy the planned roster or broaden infrastructure access as part of a handoff.
+
+Distinguish installed capabilities, tests, live evidence and unresolved requirements. Issue #9 remains open: dispatch approval enforcement is not implemented, and live Blocked-result return is not yet demonstrated. Never turn historical readiness claims into acceptance.

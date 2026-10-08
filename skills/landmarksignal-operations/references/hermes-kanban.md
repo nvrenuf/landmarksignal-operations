@@ -1,13 +1,16 @@
-# Selected issue and Kanban workflow
+# Native GitHub-to-Hermes workflow
 
-Read the current repository `docs/GITHUB_HERMES_WORKFLOW.md`, `OPERATING_MODEL.md` and `JEEVES_EXECUTION_CONTRACT.md`. Use the existing LandmarkSignal board; do not initialize/reset/export/import another board for this workflow.
+Use Project #3 as the planning/priority record and the existing LandmarkSignal board for native execution. Read repository `docs/GITHUB_HERMES_WORKFLOW.md` for the current procedure.
 
-Target: selected GitHub issue -> Triage specification -> To-do dependency resolution -> Ready waiting for Lee's execution approval -> guarded In Progress -> Review -> accepted Done. GitHub retains the full backlog; Hermes receives selected bounded work only. Preserve full issue URL and original requirements separately from derived specs, record source version/hash and prevent duplicates.
+1. Lee selects issues with Project Status **Queued for Jeeves**.
+2. Lee clicks **Import queued work** in the existing Jeeves dashboard. The eligible batch becomes unassigned Triage cards; original requirements, exact issue identity and recorded dependencies are preserved.
+3. Hermes specifies/decomposes work where appropriate. To-do can auto-promote when dependencies are satisfied. Ready can launch automatically; it is not a separate human approval queue.
+4. Workers use the tools allowed by the task scope and request Review with actual deliverables/evidence. They must not self-complete.
+5. Lee inspects and accepts through dashboard **Complete**.
+6. Lee explicitly sends results to GitHub Human Review or Blocked. This does not close the GitHub issue. Close only after human acceptance of every required criterion.
 
-Native card creation, single-task Specify and eight columns exist in revision `0c2ff854a5c5121c75ac0b0a35241a580ee27fb7`. Specify uses `auxiliary.triage_specifier`, which may not be the primary Jeeves model. Specify calls recompute_ready: parent-free To-do tasks can immediately become Ready. Allow normal promotion to Ready; gate execution at launch rather than blocking this promotion. Ready must remain idle without Lee's exact-scope approval. Scheduled is a time wait, not approval. Manual orchestration disables auto-decomposition only.
+Planning intake is not blanket authorization. Report missing approval or dependencies with the native blocker lifecycle. Do not use stale foreground-only launch requirements for ordinary native work.
 
-Reusable intake and guarded specification are not yet connected. Do not run native Specify/Decompose or ordinary dispatcher to fill that gap. Use a reviewed narrow entry that enforces the approval and lifecycle, or report the missing entry. The completed document pilots used native sticky Blocked holds before release; retain those records, but do not require a Blocked hold for the future reusable Ready workflow. Verify the actual dispatch paths and that unapproved Ready cards stay idle before enabling that workflow. Completion and card creation never grant implementation permission.
+Dashboard: `http://127.0.0.1:9119/kanban?profile=jeeves`; connection/results: `http://127.0.0.1:9119/jeeves-launch?profile=jeeves`. Do not assume Hermes Desktop uses the same runtime/board without verification.
 
-Use the Jeeves Launch tab at `http://127.0.0.1:9119/jeeves-launch?profile=jeeves` for the two installed reviewed document contracts. Completed documents stay readable; do not replay them. New contracts require source review. Returning work to Review is part of the approved run; Lee accepts before completing a card. Assess every GitHub issue criterion before closing the issue.
-
-Named board database: `%LOCALAPPDATA%\hermes\kanban\boards\landmarksignal\kanban.db`. Do not assume a root/profile database is the same board. Verify runtime/profile and installed revision before using native APIs. Do not assume Desktop/browser share state unless they resolve the same Hermes root and named board.
+Board: `%LOCALAPPDATA%\hermes\kanban\boards\landmarksignal\kanban.db`. Read the exact card workspace, not the chat's current directory. Duplicate detection includes archived cards; importing again does not revive archived work. Preserve history and workspace artifacts.

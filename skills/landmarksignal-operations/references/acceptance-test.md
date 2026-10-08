@@ -1,9 +1,13 @@
-# Acceptance evidence and review
+# Acceptance evidence and remaining requirements
 
-Issue #19 is restricted to harmless execution safety testing. It is not a product-work card. Existing foreground parent/child acceptance passed and PR #20 was merged with Lee's approval. Do not rerun, create duplicate acceptance cards, close Issue #19 or change its fields merely because this skill changed.
+Inspect actual output and exact issue/task/run/profile/workspace binding. Separate local/unit tests from real worker evidence and human acceptance. A worker Done status or completion summary does not accept a GitHub issue.
 
-Inspect supplied evidence for exact issue/task/run binding, distinct parent/child human approvals, actual model calls, blocked unauthorized/wrong-issue callbacks, ownership through agent close and preservation of existing cards. Library tests alone do not prove live integration.
+Issue #19 foreground acceptance passed; its harmless parent/child test is not a product task or native dispatcher acceptance. Do not recreate, rerun or close it merely because these instructions change.
 
-The latest document pilots have original run evidence, review amendments and subsequent acceptance in `docs/evidence/issue7/` and `docs/evidence/issue6/`. Historical Review/PENDING fields remain unchanged; later human acceptance is recorded separately. A human-reported native Done is distinct from an independent database inspection.
+Issue #30's default-profile document worker reached Review, remained there through inspection/corrections, was accepted by Lee through dashboard Complete, and returned real evidence to GitHub. Issue #30 was closed with human authorization. This does not prove a fresh Jeeves-profile worker run or all Issue #9 criteria.
 
-Scope any further acceptance to a changed execution boundary and obtain applicable authorization. Ordinary dispatcher, reusable intake/specifier and tool-enabled worker routes remain pending. Do not dispatch ordinary work or change infrastructure to manufacture evidence.
+Issue #9 remains open in Human Review. Two gaps remain: unauthorized/planning-only dispatch prevention is not enforced at the native launch boundary, and a real Blocked-result return has not been demonstrated. Human Review return was demonstrated; Blocked mapping passed local tests only.
+
+The board cleanup archived visible cards while retaining history and workspaces. Archiving does not complete acceptance or close GitHub issues. Reimporting the same issue does not revive its archived card. Read repository `docs/HERMES_WORKFLOW_CHECKPOINT.md` for exact evidence and backup locations.
+
+Scope any new acceptance to a real remaining requirement. Do not repeat completed tests or claim a skill update changes runtime enforcement.

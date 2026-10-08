@@ -42,6 +42,22 @@ class SkillUpdateTests(unittest.TestCase):
             self.assertIsNone(update.install(source, target, recovery))
             self.assertEqual(len(list(recovery.iterdir())), 1)
 
+    def test_recognized_previous_revision_is_accepted(self):
+        with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
+            source, target, recovery, old, new = self.fixture(directory)
+            path = source / "operations_skill_update_manifest.json"
+            manifest = json.loads(path.read_text())
+            previous = b"recognized later installed revision\n"
+            (target / "SKILL.md").write_bytes(previous)
+            manifest["accepted_previous_normalized_sha256"] = {
+                k: [v] for k, v in manifest["inspected_old_normalized_sha256"].items()
+            }
+            manifest["accepted_previous_normalized_sha256"]["SKILL.md"].append(update.normalized(previous))
+            path.write_text(json.dumps(manifest))
+            backup = update.install(source, target, recovery)
+            self.assertEqual((backup / "skill-before" / "SKILL.md").read_bytes(), previous)
+            self.assertEqual((target / "SKILL.md").read_bytes(), new["SKILL.md"])
+
     def test_unknown_local_edit_stops_before_any_update(self):
         with tempfile.TemporaryDirectory() as directory:
             source, target, recovery, old, new = self.fixture(directory)

@@ -1,15 +1,15 @@
-# Execution approval and safety
+# Native tools, scope and human review
 
-Follow current repository `docs/KANBAN_EXECUTION_POLICY.md` and `docs/JEEVES_EXECUTION_CONTRACT.md`.
+Read repository `docs/KANBAN_EXECUTION_POLICY.md` and `docs/JEEVES_EXECUTION_CONTRACT.md`.
 
-Keep gateway dispatch, automatic review dispatch and unattended approval disabled. Maintain one participating guarded execution at a time. Do not interpret Manual orchestration as disabling all worker/promotion routes. Do not alter unrelated services or scheduled tasks.
+Ordinary native project tools are available under existing Hermes approval settings. The obsolete foreground-only restriction has been removed. Read cards and permitted workspace files normally; do not invent scraping prohibitions or claim reads need guarded execution.
 
-Installed agent hooks deny unowned shell/task mutations/delegation. Model-facing tools may not forge approval or create an owned scope. Dashboard/native auxiliary endpoints require their own verified guarded entry; hook installation alone is not coverage of those endpoints.
+The installed default/Jeeves hook prevents worker `kanban_complete` on the LandmarkSignal board. Request Review instead. Lee completes through the dashboard. Review dispatch is configured false; concurrency limits are configured to one. These settings are not proof of a global mutex across every process/profile.
 
-Keep approved issue/task/workspace/source snapshot fixed through the work lifetime. Use only the reviewed guarded entry, preserve unrelated cards and fail closed on unavailable native locking. Never acquire a mutex in a command that exits and assume later commands remain protected. Never release ownership from another thread/process or displace a live owner using metadata expiry.
+Ready is dispatch eligibility. To-do can auto-promote and Ready can launch work. A separate explicit pre-dispatch approval interceptor has not been implemented. Do not claim that choosing a planning Status creates an execution approval record. Where the requested scope requires approval, obtain it or report a native blocker; do not forge records or broaden scope.
 
-Require applicable distinct human approvals for child creation and child execution; parent approval is insufficient. Current document tasks permit neither children nor tools. Do not enable decomposition, spawn bots or assign a worker to work around a blocked task.
+Keep original requirements, source identity and actual task/run/profile/workspace evidence. Preserve human Priority, Execution Order and Sprint. Parent scope does not automatically approve child scope or production changes. Existing Hermes approval settings remain applicable.
 
-Permit normal promotion to Ready, but require Lee's exact-scope approval at the guarded launch boundary before work starts. Verify every applicable automatic dispatch path is disabled and demonstrate unapproved Ready cards remain idle. The completed document pilots used native blocked events as sticky holds; preserve that evidence without treating those holds as a target requirement. Returning completed output to Review belongs to the approved run. Lee alone accepts and releases completion. Preserve run evidence and record amendments separately.
+Use native blocker reporting for actual blockers and Review for deliverables. Report tests actually run, not demonstrations as live integration. Never call Complete as a way to unblock, retry or request approval.
 
-Ordinary dispatcher supervision, tool-enabled work, cross-session enforcement, same-user tamper resistance, general scheduling and startup recovery remain unverified. Do not claim globally enforced safety outside participating accepted routes.
+The Issue #19 foreground guard is a separate participating route; its ownership/child checks do not establish universal native dispatcher enforcement. Do not restore its obsolete blanket tool gate.
