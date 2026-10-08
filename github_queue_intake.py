@@ -24,8 +24,11 @@ QUERY = '''query($owner:String!, $number:Int!, $cursor:String) {
       } } fieldValues(first:100) { pageInfo { hasNextPage }
         nodes { ... on ProjectV2ItemFieldSingleSelectValue { name field {
           ... on ProjectV2SingleSelectField { name }
-        } } }
-      } }
+        } }
+        ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2Field { name } } }
+        ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2Field { name } } }
+        ... on ProjectV2ItemFieldIterationValue { title field { ... on ProjectV2IterationField { name } } }
+      } } }
     }
   } }
 }'''
@@ -79,7 +82,9 @@ def read_queue(reader=gh):
             seen.add(issue['id'])
             result.append({'project_id': project['id'], 'project_item_id': item['id'],
                            'project_number': PROJECT, 'project_owner': OWNER,
-                           'source_status': QUEUED, 'issue': issue})
+                           'source_status': QUEUED, 'issue': issue,
+                           'project_fields': {v['field']['name']: next((v[k] for k in ('name','number','text','title') if k in v), None)
+                                              for v in fields['nodes'] if v.get('field',{}).get('name') in ('Priority','Execution Order','Sprint')}})
         page = items['pageInfo']
         if not page['hasNextPage']:
             break
