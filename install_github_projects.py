@@ -1,4 +1,4 @@
-"""Focused five-file launcher update. No configuration, board, or service writes."""
+"""Focused launcher payload update. No configuration, board, or service writes."""
 from contextlib import closing
 import hashlib
 import json

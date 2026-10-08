@@ -20,6 +20,7 @@ def inspect_results(root, selector=DEFAULT_PROJECT):
         if conn.execute("SELECT count(*) FROM tasks WHERE status='running'").fetchone()[0]:
             raise RuntimeError('Wait for running LandmarkSignal work before returning results')
         result=[]
+        has_events=bool(conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='task_events'").fetchone())
         for row in conn.execute('SELECT * FROM tasks'):
             card=dict(row)
             if card['status'] not in ('review','done','blocked') or not card.get('workspace_path'): continue
@@ -47,10 +48,33 @@ def inspect_results(root, selector=DEFAULT_PROJECT):
                'issue_id':issue['id'],'project_selector':selector,
                'source_sha256':digest(source),
                'project_id':source['project_id'],'project_item_id':source['project_item_id'],
+               'required_pr_merge':source.get('requires_pr_merge') is True,
                'board':'landmarksignal','workspace':str(workspace),'run':dict(run),'artifacts':artifacts,
                'proposed_status':'Blocked' if card['status']=='blocked' else 'Human Review',
                'acceptance_verified':False}
             r['snapshot_sha256']=digest(r);result.append(r)
+            if has_events:
+                event=conn.execute("SELECT payload FROM task_events WHERE task_id=? AND kind='human_accepted' ORDER BY id DESC LIMIT 1",
+                                   (card['id'],)).fetchone()
+                if event:
+                    accepted=json.loads(event[0]); saved=accepted.get('evidence_record') or {}
+                    if (accepted.get('run_id') != run['id']
+                            or (saved.get('run') or {}).get('id') != accepted.get('run_id')):
+                        raise RuntimeError('Latest task run differs from human acceptance; inspect the task event before retrying')
+                    if (saved.get('task_id') != card['id'] or saved.get('project_selector') != selector
+                            or saved.get('source_sha256') != r['source_sha256']
+                            or saved.get('artifacts') != artifacts):
+                        raise RuntimeError('Accepted source or artifacts changed; inspect the task event before retrying')
+                    result[-1]={**saved,'status':card['status'],'acceptance_recorded':True,
+                                'acceptance_verified':True,
+                                'acceptance_decision':{'summary':accepted.get('summary'),
+                                                       'pr_requirement':accepted.get('pr_requirement'),
+                                                       'pr_url':accepted.get('pr_url'),
+                                                       'accepted_at':accepted.get('accepted_at')}}
+                else:
+                    result[-1]['acceptance_recorded']=False
+            else:
+                result[-1]['acceptance_recorded']=False
         return result
 
 
@@ -66,6 +90,8 @@ def return_result(root, task_id, snapshot_sha256, reader=gh, selector=DEFAULT_PR
     if len(rows)!=1 or rows[0]['snapshot_sha256']!=snapshot_sha256:
         raise RuntimeError('Result changed; refresh before returning it')
     record=rows[0]
+    if record.get('acceptance_recorded'):
+        raise RuntimeError('Human acceptance is recorded; use Sync completion instead of returning Human Review')
     if reader(['api','user','--jq','.login']).strip()!='nvrenuf': raise RuntimeError('GitHub account must be nvrenuf')
     match=URL.fullmatch(record['issue_url']);repo,number=match.groups()
     live=json.loads(reader(['api',f'repos/{repo}/issues/{number}']))
@@ -73,10 +99,11 @@ def return_result(root, task_id, snapshot_sha256, reader=gh, selector=DEFAULT_PR
             or live.get('number') != int(number) or live.get('pull_request')):
         raise RuntimeError('Live repository/issue identity differs')
     if live.get('state')!='open': raise RuntimeError('Issue is closed; review it in GitHub before returning results')
-    query='''query($project:ID!,$item:ID!){project:node(id:$project){... on ProjectV2{id number owner{... on User{login}} fields(first:100){pageInfo{hasNextPage} nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}} item:node(id:$item){... on ProjectV2Item{id isArchived project{id} content{... on Issue{id url number repository{nameWithOwner}}}}}}'''
+    query='''query($project:ID!,$item:ID!){project:node(id:$project){... on ProjectV2{id number closed owner{... on User{login}} fields(first:100){pageInfo{hasNextPage} nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}} item:node(id:$item){... on ProjectV2Item{id isArchived project{id} content{... on Issue{id url number repository{nameWithOwner}}}}}}'''
     data=graphql(reader,query,{'project':record['project_id'],'item':record['project_item_id']})
     project,item=data['project'],data['item']
     if (not project or not item or project.get('id')!=approved['id']
+        or project.get('closed') is not False
         or project.get('number')!=approved['number'] or (project.get('owner') or {}).get('login')!=approved['owner']
         or item.get('id')!=record['project_item_id'] or item.get('isArchived') is not False
         or (item.get('project') or {}).get('id')!=project['id']

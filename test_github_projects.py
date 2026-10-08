@@ -32,10 +32,95 @@ def source(number=3, issue=1):
 
 
 class SelectionTests(unittest.TestCase):
+    def test_discovery_paginates_open_owner_projects_and_reports_missing_status(self):
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        cursors=[]
+        def fixture(number, *, closed=False, options=projects.REQUIRED_STATUS):
+            return {'id':projects.PROJECTS.get(f'nvrenuf/{number}',{}).get('id',f'PVT_{number}'),
+                    'number':number,'title':f'Project {number}','closed':closed,
+                    'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},
+                    'nodes':[{'name':'Status','options':[{'name':name} for name in options]}]}}
+        def reader(args,payload=None):
+            if args[1]=='user':return 'nvrenuf'
+            cursor=payload['variables']['cursor'];cursors.append(cursor)
+            nodes=[fixture(3),fixture(6,closed=True)] if cursor is None else [fixture(4),fixture(5,options=('Done',))]
+            return json.dumps({'data':{'user':{'login':'nvrenuf','projectsV2':{
+                'nodes':nodes,'pageInfo':{'hasNextPage':cursor is None,'endCursor':'next'}}}}})
+        try:
+            discovered=projects.discover_projects(reader)
+            self.assertEqual(cursors,[None,'next'])
+            self.assertEqual({p['selector'] for p in discovered},{'nvrenuf/3','nvrenuf/4','nvrenuf/5'})
+            self.assertFalse(projects.get_project('nvrenuf/5')['status_ready'])
+            self.assertEqual(projects.get_project('nvrenuf/5')['missing_status'],
+                             ['Queued for Jeeves','Human Review','Blocked'])
+            with self.assertRaisesRegex(RuntimeError,'Status options'):
+                projects.require_import_status(projects.get_project('nvrenuf/5'))
+        finally:
+            projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
+
+    def test_successful_catalog_excludes_static_projects_even_when_empty(self):
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        def reader(args,payload=None):
+            if args[1]=='user': return 'nvrenuf'
+            return json.dumps({'data':{'user':{'login':'nvrenuf','projectsV2':{
+                'nodes':self.nodes,'pageInfo':{'hasNextPage':False,'endCursor':None}}}}})
+        try:
+            self.nodes=[{'id':'PVT_5','number':5,'title':'Only open project','closed':False,
+                         'owner':{'login':'nvrenuf'},'fields':{'pageInfo':{'hasNextPage':False},'nodes':[]}}]
+            self.assertEqual([p['selector'] for p in projects.discover_projects(reader)],['nvrenuf/5'])
+            self.assertEqual(projects.get_project('nvrenuf/5')['id'],'PVT_5')
+            for selector in ('nvrenuf/3','nvrenuf/4'):
+                with self.subTest(selector=selector),self.assertRaisesRegex(RuntimeError,'discovered catalog'):
+                    projects.get_project(selector)
+            self.nodes=[]
+            self.assertEqual(projects.discover_projects(reader),[])
+            for selector in ('nvrenuf/3','nvrenuf/4','nvrenuf/5'):
+                with self.subTest(empty=selector),self.assertRaisesRegex(RuntimeError,'discovered catalog'):
+                    projects.get_project(selector)
+        finally:
+            projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
+
+    def test_discovery_failure_retains_last_good_catalog(self):
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        try:
+            projects._discovered.clear()
+            projects._discovered['nvrenuf/5']={'owner':'nvrenuf','number':5,'id':'OLD','title':'Old'}
+            projects._catalog_loaded=True
+            def stuck(args,payload=None):
+                if args[1]=='user':return 'nvrenuf'
+                return json.dumps({'data':{'user':{'login':'nvrenuf','projectsV2':{
+                    'nodes':[],'pageInfo':{'hasNextPage':True,'endCursor':'same'}}}}})
+            with self.assertRaisesRegex(RuntimeError,'pagination'):
+                projects.discover_projects(stuck)
+            self.assertEqual(projects.get_project('nvrenuf/5')['id'],'OLD')
+            with self.assertRaisesRegex(RuntimeError,'discovered catalog'):
+                projects.get_project('nvrenuf/3')
+            with self.assertRaisesRegex(RuntimeError,'authenticate as nvrenuf'):
+                projects.discover_projects(lambda *_:'wrong')
+        finally:
+            projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
+
     def test_unknown_source_refuses_before_read(self):
         for selector in ('nvrenuf/5','other/3','',None,3):
             with self.subTest(selector=selector), self.assertRaises(RuntimeError):
                 intake.read_queue(lambda *args: self.fail('Unexpected GitHub call'), selector)
+
+    def test_missing_status_field_refuses_before_dependencies_or_import(self):
+        calls=[]
+        def reader(args,payload=None):
+            calls.append(args)
+            if args[1]=='user':return 'nvrenuf'
+            self.assertEqual(args[1],'graphql')
+            return json.dumps({'data':{'user':{'projectV2':{
+                'id':projects.PROJECTS['nvrenuf/3']['id'],'number':3,'owner':{'login':'nvrenuf'},
+                'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'name':'Status','options':[{'name':'Done'}]}]},
+                'items':{'pageInfo':{'hasNextPage':False},'nodes':[]}}}}})
+        with self.assertRaisesRegex(RuntimeError,'missing required existing Status configuration'):
+            intake.read_queue(reader,'nvrenuf/3')
+        self.assertEqual([a[1] for a in calls],['user','graphql'])
 
     def test_queue_isolation_identity_and_closed_filter(self):
         for n in (3,4):
@@ -53,6 +138,8 @@ class SelectionTests(unittest.TestCase):
                           {'title':'Sprint 001','field':{'name':'Sprint'}}]}}
                 return json.dumps({'data':{'user':{'projectV2':{
                     'id':projects.get_project(f'nvrenuf/{n}')['id'],'number':n,'owner':{'login':'nvrenuf'},
+                    'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'name':'Status','options':[
+                        {'name':name} for name in projects.REQUIRED_STATUS]}]},
                     'items':{'pageInfo':{'hasNextPage':False},'nodes':[item,
                         {**item,'content':{**item['content'],'state':'CLOSED'}}]}}}}})
             result=intake.read_queue(reader,f'nvrenuf/{n}')
@@ -67,6 +154,24 @@ class SelectionTests(unittest.TestCase):
 
 
 class ProjectImportTests(intake_tests.ImportTests):
+    def test_newly_discovered_project_is_scoped_and_archived_root_is_deduplicated(self):
+        previous=projects._discovered.copy()
+        try:
+            projects._discovered['nvrenuf/5']={'owner':'nvrenuf','number':5,'id':'PVT_5',
+                'title':'New source','status_ready':True,'missing_status':[]}
+            new=source(5)
+            created=intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/5')
+            self.assertEqual(len(created['created']),1)
+            task=created['created'][0]['task_id']
+            self.assertEqual(self.conn.execute('SELECT idempotency_key FROM tasks WHERE id=?',(task,)).fetchone()[0],
+                             'github-project:PVT_5:'+new['issue']['id'])
+            self.conn.execute("UPDATE tasks SET status='archived' WHERE id=?",(task,));self.conn.commit()
+            repeated=intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/5')
+            self.assertFalse(repeated['created']);self.assertEqual(repeated['existing'][0]['status'],'archived')
+            with self.assertRaises(RuntimeError):intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/3')
+        finally:
+            projects._discovered.clear();projects._discovered.update(previous)
+
     def test_same_issue_two_projects_duplicate_batch_and_archived_records(self):
         a=source(3); b=source(4)
         first=intake.import_records(self.conn,self.kb,[a,a],self.root)
@@ -120,7 +225,7 @@ class ResultTests(unittest.TestCase):
                 self.assertEqual(payload['variables'],{'project':r['project_id'],'item':r['project_item_id'],'field':'STATUS','option':self.status})
                 return json.dumps({'data':{}})
             if 'fieldValueByName' in q:return json.dumps({'data':{'node':{'fieldValueByName':{'name':self.status}}}})
-            data={'project':{'id':r['project_id'],'number':self.number,'owner':{'login':'nvrenuf'},
+            data={'project':{'id':r['project_id'],'number':self.number,'closed':self.bad=='closed','owner':{'login':'nvrenuf'},
                 'fields':{'pageInfo':{'hasNextPage':False},'nodes':[{'id':'STATUS','name':'Status','options':[{'id':self.status,'name':self.status}]}]}},
                 'item':{'id':r['project_item_id'],'isArchived':False,'project':{'id':r['project_id']},'content':copy.deepcopy(r['issue'])}}
             if self.bad=='item':data['item']['id']='wrong'
@@ -157,7 +262,7 @@ class ResultTests(unittest.TestCase):
     def test_remote_mismatches_reject_before_any_write(self):
         self.number=4;self.status='Human Review'
         row=returns.inspect_results(self.root,'nvrenuf/4')[0]
-        for self.bad in ('item','project','issue','repo','archived','rest'):
+        for self.bad in ('item','project','issue','repo','archived','closed','rest'):
             self.calls=[]
             with self.subTest(bad=self.bad),self.assertRaises(RuntimeError):
                 returns.return_result(self.root,'t4',row['snapshot_sha256'],self.reader,'nvrenuf/4')
@@ -175,7 +280,8 @@ class ResultTests(unittest.TestCase):
 
 class ApiTests(dashboard_tests.LaunchTests):
     def test_catalog_and_selected_import_results(self):
-        self.assertEqual(len(self.api.github_projects(self.request)['projects']),2)
+        with patch.object(projects,'discover_projects',return_value=[projects.get_project(key) for key in projects.PROJECTS]):
+            self.assertEqual(len(self.api.github_projects(self.request)['projects']),2)
         for selector in projects.PROJECTS:
             self.request.query_params={'project':selector}
             with patch.object(intake,'run_intake',return_value={}) as run:

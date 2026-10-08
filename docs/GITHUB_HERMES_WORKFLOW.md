@@ -1,5 +1,7 @@
 # GitHub-to-Hermes workflow
 
+> October 8 update: See [Jeeves project discovery and human completion](JEEVES_PROJECT_DISCOVERY_AND_ACCEPTANCE.md) for the current dynamic selector and accepted-completion path. The Project #3/#4 selector and separate manual issue-closure steps below describe the prior release.
+
 Current operating checkpoint: October 7, 2026, after PRs #28/#29 and Issue #30 acceptance. This replaces earlier foreground-only procedures for ordinary project work.
 
 ## Authority

@@ -11,14 +11,16 @@ import re
 import sqlite3
 import subprocess
 import uuid
-from github_projects import DEFAULT_PROJECT, get_project, validate_source, source_key
+from github_projects import DEFAULT_PROJECT, REQUIRED_STATUS, get_project, require_import_status, validate_source, source_key
 
 OWNER = 'nvrenuf'
 PROJECT = 3
 QUEUED = 'Queued for Jeeves'
 REVISION = '0c2ff854a5c5121c75ac0b0a35241a580ee27fb7'
 QUERY = '''query($owner:String!, $number:Int!, $cursor:String) {
-  user(login:$owner) { projectV2(number:$number) { id title number owner { ... on User { login } }
+  user(login:$owner) { projectV2(number:$number) { id title number closed owner { ... on User { login } }
+    fields(first:100) { pageInfo { hasNextPage }
+      nodes { ... on ProjectV2SingleSelectField { id name options { id name } } } }
     items(first:100, after:$cursor) { pageInfo { hasNextPage endCursor }
       nodes { id isArchived content { __typename ... on Issue {
         id number url title body updatedAt state repository { nameWithOwner }
@@ -51,6 +53,7 @@ def gh(arguments, payload=None):
 
 def read_queue(reader=gh, selector=DEFAULT_PROJECT):
     approved = get_project(selector)
+    require_import_status(approved)
     if reader(['api', 'user', '--jq', '.login']).strip() != OWNER:
         raise RuntimeError('GitHub must authenticate as nvrenuf; no card created')
     result, seen, cursor = [], set(), None
@@ -62,8 +65,18 @@ def read_queue(reader=gh, selector=DEFAULT_PROJECT):
         project = ((value.get('data') or {}).get('user') or {}).get('projectV2')
         if (not project or project.get('id') != approved['id']
                 or project.get('number') != approved['number']
-                or (project.get('owner') or {}).get('login') != approved['owner']):
+                or (project.get('owner') or {}).get('login') != approved['owner']
+                or project.get('closed') is True):
             raise RuntimeError('Selected project identity differs or is unavailable')
+        fields = project.get('fields') or {}
+        if (fields.get('pageInfo') or {}).get('hasNextPage'):
+            raise RuntimeError('Selected project fields are truncated; nothing imported')
+        statuses = [f for f in fields.get('nodes') or [] if f and f.get('name') == 'Status']
+        options = [o.get('name') for o in statuses[0].get('options') or []] if len(statuses) == 1 else []
+        missing = [name for name in REQUIRED_STATUS if options.count(name) != 1]
+        if len(statuses) != 1 or missing:
+            raise RuntimeError('Project #%s is missing required existing Status configuration: %s. Configure it in GitHub before import; no field was changed.' % (
+                approved['number'], ', '.join(missing) if len(statuses) == 1 else 'exactly one Status field'))
         items = project['items']
         for item in items['nodes']:
             if item.get('isArchived'):

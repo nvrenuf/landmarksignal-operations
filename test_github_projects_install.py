@@ -41,5 +41,5 @@ class InstallTests(unittest.TestCase):
     def test_manifest_matches_source(self):
         root=Path(__file__).resolve().parent
         entries=json.loads((root/'github_projects_assets.json').read_text())
-        self.assertEqual(len(entries),5)
+        self.assertEqual(len(entries),6)
         for e in entries:self.assertEqual(installer.sha((root/e['source']).read_bytes()),e['new_sha256'])
