@@ -1,3 +1,5 @@
+> Historical bounded document-contract procedure. For ordinary project work after PRs #28/#29, use [current workflow](GITHUB_HERMES_WORKFLOW.md) and [folder map](HERMES_FOLDER_MAP.md). Do not rerun this older setup for routine intake; its no-tools pilots do not describe all current native workers.
+
 # Manual Jeeves document handoff
 
 Follow [GitHub to Hermes workflow](GITHUB_HERMES_WORKFLOW.md) for authority, intake and approval boundaries. This procedure covers only the accepted document contracts.

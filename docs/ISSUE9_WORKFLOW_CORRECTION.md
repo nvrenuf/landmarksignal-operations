@@ -1,3 +1,5 @@
+> Implementation report at the pre-merge repair checkpoint. PRs #28/#29 are now merged; the Windows installation, worker Review and explicit result return succeeded. Use [current checkpoint](HERMES_WORKFLOW_CHECKPOINT.md) for acceptance evidence and remaining gaps, and [folder map](HERMES_FOLDER_MAP.md) for installed locations.
+
 # Issue 9: focused workflow correction
 
 The reviewed worker output had reproducible defects: broken status mapping, automatic priority-to-sprint reassignment, permissive empty approvals, placeholder task IDs, and failure evidence omitted from return payloads. Native Done reflected worker reports, not acceptance.
