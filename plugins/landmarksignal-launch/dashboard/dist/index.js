@@ -30,6 +30,28 @@
         result.skipped.map(function (item) { return h("p", {key: item.issue_url}, item.issue_url + ": " + item.reason); }),
         h("small", null, "Batch report: " + result.batch_id + ". Existing cards preserved. No execution approval granted.")) : null);
   }
+  function ResultPanel() {
+    var a=R.useState([]), rows=a[0], setRows=a[1];
+    var b=R.useState(""), message=b[0], setMessage=b[1];
+    var c=R.useState(false), busy=c[0], setBusy=c[1];
+    async function refresh() { try { setRows((await api("/github-results")).results); } catch(e) { setMessage(e.message); } }
+    R.useEffect(function(){ refresh(); }, []);
+    async function send(row) {
+      setBusy(true); setMessage("");
+      try {
+        var result=await api("/github-return", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task_id:row.task_id,snapshot_sha256:row.snapshot_sha256})});
+        setMessage(result.issue_url+" → "+result.status+". Human acceptance is still required.");
+      } catch(e) { setMessage(e.message); } finally { setBusy(false); }
+    }
+    return h("section",{style:{border:"1px solid #A9B7A4",padding:"16px",marginBottom:"16px"}},
+      h("strong",null,"Hermes → GitHub review"),
+      h("p",null,"Return worker summaries and artifact evidence to GitHub. This does not accept or close an issue."),
+      h("button",{onClick:refresh,disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"}},"Refresh results"),
+      rows.map(function(row){ return h("div",{key:row.task_id},h("p",null,row.title+" · "+row.status),
+        h("details",null,h("summary",null,"Inspect return evidence"),h("pre",{style:{whiteSpace:"pre-wrap"}},JSON.stringify(row,null,2))),
+        h("button",{disabled:busy,style:{padding:"8px 14px",border:"1px solid #A9B7A4",borderRadius:"5px",background:"#1F4D3A",color:"#FBF7EC",cursor:"pointer"},onClick:function(){send(row);}},"Send results to GitHub "+row.proposed_status)); }),
+      message?h("p",{role:"status"},message):null);
+  }
   function Panel() {
     var choicesState = R.useState([]), choices = choicesState[0], setChoices = choicesState[1];
     var taskState = R.useState("issue6-roster"), selected = taskState[0], setSelected = taskState[1];
@@ -82,6 +104,7 @@
     var button = {padding: "8px 14px", marginRight: "8px", border: "1px solid #A9B7A4", borderRadius: "5px", cursor: "pointer"};
     return h("section", {style: style},
       h(IntakePanel, null),
+      h(ResultPanel, null),
       h("strong", null, "Jeeves · Approved document tasks"),
       h("p", null, h("label", null, "Task ", h("select", {value: selected, onChange: changeTask, disabled: busy},
         choices.map(function (task) { return h("option", {key: task.selector, value: task.selector}, "Issue #" + task.issue_number + ": " + task.title); })))),

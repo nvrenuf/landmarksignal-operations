@@ -185,3 +185,34 @@ def github_intake(request: Request):
         if isinstance(error, RuntimeError):
             raise HTTPException(409, str(error))
         raise HTTPException(409, 'Intake stopped: ' + type(error).__name__ + '. No automatic retry.')
+
+
+@router.get('/github-results')
+def github_results(request: Request):
+    require_jeeves(request)
+    from github_handoff_results import inspect_results
+    root, _, _ = paths()
+    try:
+        return {'results': inspect_results(root)}
+    except RuntimeError as error:
+        raise HTTPException(409, str(error))
+
+
+class ResultReturn(BaseModel):
+    task_id: str
+    snapshot_sha256: str
+
+
+@router.post('/github-return')
+def github_return(request: Request, payload: ResultReturn):
+    require_jeeves(request)
+    if request.headers.get('origin') != str(request.base_url).rstrip('/'):
+        raise HTTPException(403, 'Return results from this dashboard page')
+    from github_handoff_results import return_result
+    root, _, _ = paths()
+    try:
+        from execution_guard_v1_final import ExecutionGuard
+        return ExecutionGuard('9', 'github-result-return', timeout=0).execute(
+            lambda: return_result(root, payload.task_id, payload.snapshot_sha256))
+    except Exception as error:
+        raise HTTPException(409, str(error) if isinstance(error, RuntimeError) else 'Result return stopped: '+type(error).__name__)

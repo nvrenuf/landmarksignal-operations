@@ -1,0 +1,162 @@
+[
+  {
+    "source": "plugins/landmarksignal-launch/dashboard/plugin_api.py",
+    "target": "plugins/landmarksignal-launch/dashboard/plugin_api.py",
+    "new_sha256": "54f12d12b0a3f4baebff373e5712aa390846d2e0d96ecd7915c81b11bf7f8cf2",
+    "old_sha256": "8933bc1cef60bb3d03d646aeccfac105441fcf61f8f9df19ca07b87b4725141e",
+    "allowed_old_sha256": [
+      "8933bc1cef60bb3d03d646aeccfac105441fcf61f8f9df19ca07b87b4725141e"
+    ]
+  },
+  {
+    "source": "plugins/landmarksignal-launch/dashboard/dist/index.js",
+    "target": "plugins/landmarksignal-launch/dashboard/dist/index.js",
+    "new_sha256": "3b98dfe628086099104e6bbc45ea9e4f894ab78c5c0c92a68e05d3b295f6df77",
+    "old_sha256": "33f42215985c2040220dd407719898afafd793b51201136648380ccb20b03e69",
+    "allowed_old_sha256": [
+      "33f42215985c2040220dd407719898afafd793b51201136648380ccb20b03e69",
+      "11de6d0c604e6ddec21eea2da62be91d10c518c0f9339a5b9e72accbb1426b10"
+    ]
+  },
+  {
+    "source": "github_queue_intake.py",
+    "target": "plugins/landmarksignal-launch/dashboard/runner/github_queue_intake.py",
+    "new_sha256": "b05c29ec30d7143cb0cf5c84d1e99a74db223915591b3e4dc42af0d61bd0bee4",
+    "old_sha256": "91d871ee2b129c407fa85b41cf4ba4ed27fce3ef59da0701b6fb6b1e9128c80b",
+    "allowed_old_sha256": [
+      "91d871ee2b129c407fa85b41cf4ba4ed27fce3ef59da0701b6fb6b1e9128c80b"
+    ]
+  },
+  {
+    "source": "github_handoff_results.py",
+    "target": "plugins/landmarksignal-launch/dashboard/runner/github_handoff_results.py",
+    "new_sha256": "dfc50daeef41511a8968e26548243b325731fb532b9dfa97a11403d79ec46d26",
+    "old_sha256": null,
+    "allowed_old_sha256": []
+  },
+  {
+    "source": "landmarksignal_review_policy.py",
+    "target": "profiles/jeeves/plugins/landmarksignal-execution/policy.py",
+    "new_sha256": "c32836b8da1d4d47ae4be2c8b4adb2c0d6d4b57058cc9d82047fdf7114475fd8",
+    "old_sha256": "026a8135ff9ac54f2eb11da6010d5d61fd880e433717880d93bcd4b25531ff35",
+    "allowed_old_sha256": [
+      "026a8135ff9ac54f2eb11da6010d5d61fd880e433717880d93bcd4b25531ff35",
+      "a7e3d1d2100a156450beec55d18bf12627d7ed1b48d75ebb418811e219d01eb3"
+    ]
+  },
+  {
+    "source": "issue9_review_plugin_init.py",
+    "target": "profiles/jeeves/plugins/landmarksignal-execution/__init__.py",
+    "new_sha256": "fe51b3f2dea666c8ad5cf6b1a5f00ce88fa8e34df1c8e959565bbc5ca07ac0bb",
+    "old_sha256": "b7f8e76e83c6b7d3fbbed91c5bbb4d4660309a6d8810b91aaa0e5b2b684cc736",
+    "allowed_old_sha256": [
+      "b7f8e76e83c6b7d3fbbed91c5bbb4d4660309a6d8810b91aaa0e5b2b684cc736"
+    ]
+  },
+  {
+    "source": "issue9_review_plugin.yaml",
+    "target": "profiles/jeeves/plugins/landmarksignal-execution/plugin.yaml",
+    "new_sha256": "d0e7234aed3cff6a43e79e6defd780824fbbc04ebe736cee525c25904cdb110a",
+    "old_sha256": "25a21531580402f65629756cf805bac7fbc69ee34527d6d703fbe8c0d41e70f8",
+    "allowed_old_sha256": [
+      "25a21531580402f65629756cf805bac7fbc69ee34527d6d703fbe8c0d41e70f8"
+    ]
+  },
+  {
+    "source": "landmarksignal_review_policy.py",
+    "target": "plugins/landmarksignal-execution/policy.py",
+    "new_sha256": "c32836b8da1d4d47ae4be2c8b4adb2c0d6d4b57058cc9d82047fdf7114475fd8",
+    "old_sha256": null,
+    "allowed_old_sha256": [
+      "026a8135ff9ac54f2eb11da6010d5d61fd880e433717880d93bcd4b25531ff35",
+      "a7e3d1d2100a156450beec55d18bf12627d7ed1b48d75ebb418811e219d01eb3"
+    ]
+  },
+  {
+    "source": "issue9_review_plugin_init.py",
+    "target": "plugins/landmarksignal-execution/__init__.py",
+    "new_sha256": "fe51b3f2dea666c8ad5cf6b1a5f00ce88fa8e34df1c8e959565bbc5ca07ac0bb",
+    "old_sha256": null,
+    "allowed_old_sha256": []
+  },
+  {
+    "source": "issue9_review_plugin.yaml",
+    "target": "plugins/landmarksignal-execution/plugin.yaml",
+    "new_sha256": "d0e7234aed3cff6a43e79e6defd780824fbbc04ebe736cee525c25904cdb110a",
+    "old_sha256": null,
+    "allowed_old_sha256": []
+  },
+  {
+    "source": "landmarksignal_review_policy.py",
+    "target": "plugins/landmarksignal-launch/dashboard/runner/landmarksignal_policy.py",
+    "new_sha256": "c32836b8da1d4d47ae4be2c8b4adb2c0d6d4b57058cc9d82047fdf7114475fd8",
+    "old_sha256": "026a8135ff9ac54f2eb11da6010d5d61fd880e433717880d93bcd4b25531ff35",
+    "allowed_old_sha256": [
+      "a7e3d1d2100a156450beec55d18bf12627d7ed1b48d75ebb418811e219d01eb3",
+      "026a8135ff9ac54f2eb11da6010d5d61fd880e433717880d93bcd4b25531ff35"
+    ]
+  },
+  {
+    "source": "issue9/handoff_logic.py",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/handoff_logic.py",
+    "new_sha256": "07ad80a96e41a58726f6bf218d8f0dd05d3becab4fee76fe6dd855cd57248034",
+    "old_sha256": "5c0f24de596864c0309ca673a07d05a921ea0738100b379c0022b455719ac81c",
+    "allowed_old_sha256": [
+      "5c0f24de596864c0309ca673a07d05a921ea0738100b379c0022b455719ac81c"
+    ]
+  },
+  {
+    "source": "issue9/sprint_assignment.py",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/sprint_assignment.py",
+    "new_sha256": "ed4d8369f82badf1f2fd9609aaccb56bcf259a1aeafcb90efcc913ab616d0d80",
+    "old_sha256": "ef79dfc28898aa222e19ac5999a722fd7f972166bc8a8541d05b46c7c36177fc",
+    "allowed_old_sha256": [
+      "ef79dfc28898aa222e19ac5999a722fd7f972166bc8a8541d05b46c7c36177fc"
+    ]
+  },
+  {
+    "source": "issue9/status_sync.py",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/status_sync.py",
+    "new_sha256": "0a0255543fdc56febd8d99dcf9b15ed419daa166f31a736a1e680483596cc7eb",
+    "old_sha256": "8c3435b5c686532b01c4c06d6806205847f3b5acfc9cc5951c94b40ace4bf720",
+    "allowed_old_sha256": [
+      "8c3435b5c686532b01c4c06d6806205847f3b5acfc9cc5951c94b40ace4bf720"
+    ]
+  },
+  {
+    "source": "issue9/evidence_mechanism.py",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/evidence_mechanism.py",
+    "new_sha256": "6648435360a7957ac26986a9ef023a655a6595db166303a45c6a9d403e923df0",
+    "old_sha256": "8ab4356c432d2ac16df7a12e442517e1f87db011f2a68c298e5bfc869598ee7f",
+    "allowed_old_sha256": [
+      "8ab4356c432d2ac16df7a12e442517e1f87db011f2a68c298e5bfc869598ee7f"
+    ]
+  },
+  {
+    "source": "issue9/IMPLEMENTATION.md",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/IMPLEMENTATION.md",
+    "new_sha256": "4a64a4a4444b7adb4e6529fb0c278fae5430fc32c4294fc527c88481027fd876",
+    "old_sha256": "4ab5bffc4082c210aad15cc5da202ada0f368abda73ca5b8b46b027d4c889de8",
+    "allowed_old_sha256": [
+      "4ab5bffc4082c210aad15cc5da202ada0f368abda73ca5b8b46b027d4c889de8"
+    ]
+  },
+  {
+    "source": "issue9/schema.md",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/schema.md",
+    "old_sha256": "24ca6e70fb2bae0869b588a8c3c87e1217909b83a3fdd90f22192f97710b6633",
+    "allowed_old_sha256": [
+      "24ca6e70fb2bae0869b588a8c3c87e1217909b83a3fdd90f22192f97710b6633"
+    ],
+    "new_sha256": "03c941272e79370ea3c32ef08cc3c82ecf4c5b1bd25e309adfff9820d737e69c"
+  },
+  {
+    "source": "issue9/evidence_report.md",
+    "target": "landmarksignal-v1/work/github-intake/59aa8eac4c1ede25862fb94f/evidence_report.md",
+    "old_sha256": "a8def60609867b1a596b6f52c724b4cebee4f95a03916f0dd2ee8d21a9196e7a",
+    "allowed_old_sha256": [
+      "a8def60609867b1a596b6f52c724b4cebee4f95a03916f0dd2ee8d21a9196e7a"
+    ],
+    "new_sha256": "44bfabea0331574043d6809d4696fca78cb16b6a7f378bfb6266191b90cb8b64"
+  }
+]

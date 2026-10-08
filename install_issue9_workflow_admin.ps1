@@ -1,0 +1,89 @@
+param([Parameter(Mandatory=$true)][string]$ExpectedUserSid)
+$ErrorActionPreference = 'Stop'
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = [Security.Principal.WindowsPrincipal]::new($identity)
+if ($identity.User.Value -ne $ExpectedUserSid -or
+    !$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Error 'Maintenance requires elevated Lee identity; no other account may install it.'
+    exit 1
+}
+$report = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Jeeves-Issue9-Workflow-Admin.txt'
+$root = Join-Path $env:LOCALAPPDATA 'hermes'
+$jeevesProfileDirectory = Join-Path $root 'profiles\jeeves'
+$python = Join-Path $root 'hermes-agent\venv\Scripts\python.exe'
+$acls = @{}
+$directoryAcls = @{}
+$failed = $false
+$logDirectory = Join-Path $root ('landmarksignal-v1\recovery\read-admin-' + [guid]::NewGuid().ToString('N'))
+$transcribing = $false
+try {
+    Start-Transcript -LiteralPath $report -Force | Out-Null
+    $transcribing = $true
+    $manifest = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'issue9_workflow_assets.json') | ConvertFrom-Json
+    $paths = @($manifest | ForEach-Object { Join-Path $root $_.target } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
+    $paths += @(Join-Path $root 'config.yaml')
+    $paths += @(Join-Path $jeevesProfileDirectory 'config.yaml')
+    foreach ($path in $paths) {
+        $acls[$path] = Get-Acl -LiteralPath $path
+        $directory = Split-Path -Parent $path
+        $directoryAcls[$directory] = (Get-Acl -LiteralPath $directory).Sddl
+    }
+    New-Item -ItemType Directory -Path $logDirectory | Out-Null
+    $securityBackup = @{}
+    foreach ($path in $acls.Keys) { $securityBackup[$path] = $acls[$path].Sddl }
+    $securityBackup | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $logDirectory 'file-acls.before.json') -Encoding UTF8
+    Write-Host '=== Elevated maintenance: workflow files only ==='
+    $helper = Join-Path $PSScriptRoot 'install_issue9_workflow.py'
+    $installation = Start-Process -FilePath $python -Wait -PassThru -NoNewWindow `
+        -ArgumentList @('-B', ('"' + $helper + '"')) `
+        -RedirectStandardOutput (Join-Path $logDirectory 'stdout.txt') `
+        -RedirectStandardError (Join-Path $logDirectory 'stderr.txt')
+    Get-Content -LiteralPath (Join-Path $logDirectory 'stdout.txt') | Write-Host
+    Get-Content -LiteralPath (Join-Path $logDirectory 'stderr.txt') | Write-Host
+    if ($installation.ExitCode -ne 0) { throw "Policy installer exit code: $($installation.ExitCode)" }
+    # Newly added modules inherit OWNER RIGHTS for their administrator creator.
+    # Permit the normal runtime account to read them; retain owner and all other ACEs.
+    foreach ($entry in @($manifest | Where-Object { $null -eq $_.old_sha256 })) {
+        $path = Join-Path $root $entry.target
+        if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw "Installed module missing: $path" }
+        $security = Get-Acl -LiteralPath $path
+        $userSid = [Security.Principal.SecurityIdentifier]::new($ExpectedUserSid)
+        $rule = [Security.AccessControl.FileSystemAccessRule]::new(
+            $userSid, [Security.AccessControl.FileSystemRights]::ReadAndExecute,
+            [Security.AccessControl.AccessControlType]::Allow)
+        $security.AddAccessRule($rule) | Out-Null
+        Set-Acl -LiteralPath $path -AclObject $security
+        $acls[$path] = $security
+    }
+    Write-Host 'PASS: newly added modules grant the normal runtime account read/execute access.'
+
+} catch {
+    $failed = $true
+    Write-Host ('STOPPED: ' + $_.Exception.Message)
+} finally {
+    foreach ($path in $acls.Keys) {
+        try {
+            # Replacement creates a new file. Restore its exact previous owner/DACL.
+            if ((Get-Acl -LiteralPath $path).Sddl.Replace('D:AI(', 'D:(') -cne $acls[$path].Sddl.Replace('D:AI(', 'D:(')) {
+                Set-Acl -LiteralPath $path -AclObject $acls[$path]
+            }
+            if ((Get-Acl -LiteralPath $path).Sddl.Replace('D:AI(', 'D:(') -cne $acls[$path].Sddl.Replace('D:AI(', 'D:(')) {
+                throw "File protection differs after maintenance: $path"
+            }
+        } catch {
+            $failed = $true
+            Write-Host ('ACL VERIFICATION FAILED: ' + $_.Exception.Message)
+        }
+    }
+    foreach ($directory in $directoryAcls.Keys) {
+        if ((Get-Acl -LiteralPath $directory).Sddl -ne $directoryAcls[$directory]) {
+            $failed = $true
+            Write-Host "DIRECTORY ACL CHANGED: $directory"
+        }
+    }
+    if (!$failed) { Write-Host 'PASS: original protections preserved; new-module runtime read access verified.' }
+    Write-Host 'No Hermes runtime, dashboard, model, task or SSH tunnel was launched by this elevated step.'
+    if ($transcribing) { Stop-Transcript | Out-Null }
+}
+if ($failed) { exit 1 }
+exit 0

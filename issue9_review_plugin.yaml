@@ -1,0 +1,6 @@
+name: landmarksignal-execution
+version: "1.1.0"
+description: "Allow native project tools and require human review of worker output."
+author: "LandmarkSignal"
+hooks:
+  - pre_tool_call

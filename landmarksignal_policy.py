@@ -9,14 +9,59 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import sys
 import threading
 import uuid
 
 SCOPE_MODULE = "landmarksignal_v1_scope"
 PREFIX = "LANDMARKSIGNAL_V1: "
-PLANNING_READS = {"read_file", "search_files", "web_search", "web_extract"}
+PLANNING_READS = {"read_file", "search_files", "web_search", "web_extract",
+                  "kanban_list", "kanban_show", "kanban_attachments"}
 FILE_READS = {"read_file", "search_files"}
+
+
+def owns_native_block(args):
+    """Allow reporting a blocker, never claiming or approving execution.
+
+    Environment labels alone are insufficient. Match the live task/run and
+    worker PID against the existing board through a read-only connection.
+    Hermes's own handler additionally checks its run lifecycle ownership.
+    """
+    if not isinstance(args, dict) or args.get("board") not in (None, "landmarksignal"):
+        return False
+    if args.get("kind") != "needs_input" or not isinstance(args.get("reason"), str):
+        return False
+    if not args["reason"].strip():
+        return False
+    try:
+        root = Path(os.environ["LOCALAPPDATA"]) / "hermes"
+        database = root / "kanban/boards/landmarksignal/kanban.db"
+        task_id = os.environ["HERMES_KANBAN_TASK"]
+        run_id = int(os.environ["HERMES_KANBAN_RUN_ID"])
+        claim = os.environ["HERMES_KANBAN_CLAIM_LOCK"]
+        if not claim or args.get("task_id", task_id) != task_id:
+            return False
+        if os.environ.get("HERMES_PROFILE") != "jeeves":
+            return False
+        if Path(os.environ["HERMES_HOME"]).resolve() != (root / "profiles/jeeves").resolve():
+            return False
+        if Path(os.environ["HERMES_KANBAN_DB"]).resolve() != database.resolve():
+            return False
+        connection = sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True, timeout=2)
+        try:
+            connection.execute("PRAGMA query_only=ON")
+            row = connection.execute(
+                "SELECT t.status, t.assignee, t.current_run_id, t.claim_lock, t.worker_pid, "
+                "r.task_id, r.status, r.profile, r.claim_lock FROM tasks t "
+                "JOIN task_runs r ON r.id=t.current_run_id WHERE t.id=?", (task_id,),
+            ).fetchone()
+            return row == ("running", "jeeves", run_id, claim, os.getpid(),
+                           task_id, "running", "jeeves", claim)
+        finally:
+            connection.close()
+    except (KeyError, ValueError, OSError, sqlite3.Error):
+        return False
 
 
 def blocked(message):
@@ -63,7 +108,11 @@ def decide(tool_name="", args=None, **kwargs):
     if scope is None:
         if tool_name in PLANNING_READS:
             return None
+        if tool_name == "kanban_block" and owns_native_block(args):
+            return None
         return blocked("Execution requires Lee's manual guarded issue entry. "
+                       "Card reads are allowed. An assigned native Jeeves worker may report its own "
+                       "blocker with kanban_block(kind='needs_input'). "
                        "Propose the work and await approval; do not use another tool to bypass this gate.")
     if getattr(scope, "acceptance", False):
         return blocked("Issue #19 acceptance model calls have no tool permission. "
