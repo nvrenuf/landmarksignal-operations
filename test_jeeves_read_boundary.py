@@ -12,6 +12,20 @@ from landmarksignal_policy import decide
 
 
 class ReadBoundaryTests(unittest.TestCase):
+    def test_replacement_is_atomic_and_permission_failure_does_not_retry(self):
+        from repair_jeeves_read_boundary import replace
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "policy.py"
+            path.write_bytes(b"old")
+            with patch("pathlib.Path.open", side_effect=PermissionError("protected")) as opened:
+                with self.assertRaises(PermissionError):
+                    replace(path, b"new")
+                self.assertEqual(opened.call_count, 1)
+            self.assertEqual(path.read_bytes(), b"old")
+            replace(path, b"new")
+            self.assertEqual(path.read_bytes(), b"new")
+            self.assertEqual(list(Path(directory).iterdir()), [path])
+
     def test_card_reads_allowed_while_execution_remains_denied(self):
         for name in ("kanban_show", "kanban_list", "kanban_attachments"):
             self.assertIsNone(decide(name, {"board": "landmarksignal"}))

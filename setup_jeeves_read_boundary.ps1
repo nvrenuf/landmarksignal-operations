@@ -8,6 +8,11 @@ try {
     Start-Transcript -LiteralPath $report -Force | Out-Null
     $transcribing = $true
     Write-Host '=== JEEVES CARD READ / BLOCKER REPORT REPAIR ==='
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'Run this setup in regular PowerShell. Only the maintenance installer is elevated.'
+    }
     if (!(Test-Path -LiteralPath $python -PathType Leaf)) { throw "Python not found: $python" }
     $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 9119 -ErrorAction SilentlyContinue |
         Select-Object -ExpandProperty OwningProcess -Unique)
@@ -38,8 +43,14 @@ try {
     & $python -B (Join-Path $PSScriptRoot 'test_jeeves_read_boundary.py')
     if ($LASTEXITCODE -ne 0) { throw 'Boundary checks failed. No installation performed.' }
     Write-Host '=== Back up and install inspected policy correction ==='
-    & $python -B (Join-Path $PSScriptRoot 'repair_jeeves_read_boundary.py')
-    if ($LASTEXITCODE -ne 0) { throw 'Policy repair stopped. Dashboard left running; return this report.' }
+    Write-Host 'Windows will request administrator approval for the protected policy update only.'
+    $maintenance = Join-Path $PSScriptRoot 'install_jeeves_read_boundary_admin.ps1'
+    $admin = Start-Process -FilePath (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') `
+        -Verb RunAs -Wait -PassThru -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', ('"' + $maintenance + '"'), '-ExpectedUserSid', $identity.User.Value)
+    $adminReport = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Jeeves-Read-Boundary-Admin.txt'
+    if (Test-Path -LiteralPath $adminReport) { Get-Content -LiteralPath $adminReport | Write-Host }
+    if ($admin.ExitCode -ne 0) { throw 'Elevated policy repair stopped. Dashboard left running; return the reports.' }
     Write-Host '=== Reload existing standalone browser dashboard ==='
     $current = Get-CimInstance Win32_Process -Filter "ProcessId=$dashboardPid"
     if (!$current -or $current.CreationDate -ne $processCreated) {

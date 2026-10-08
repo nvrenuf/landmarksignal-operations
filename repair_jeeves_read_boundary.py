@@ -8,7 +8,6 @@ import os
 from pathlib import Path
 import sqlite3
 import sys
-import tempfile
 import uuid
 
 OLD_NORMALIZED_SHA = "3c90716e1a931cc8cf37fbc217694c87862ae942d71030464b46e727c0eeaf75"
@@ -19,16 +18,18 @@ def normalized(content):
 
 
 def replace(path, content):
-    fd, name = tempfile.mkstemp(prefix=".read-policy-", dir=path.parent)
+    # tempfile retries Windows PermissionError when a directory appears writable.
+    # Protected policy directories must fail immediately rather than retry names.
+    temporary = path.parent / (".read-policy-" + uuid.uuid4().hex)
     try:
-        with os.fdopen(fd, "wb") as stream:
+        with temporary.open("xb") as stream:
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(name, path)
+        os.replace(temporary, path)
     finally:
-        if os.path.exists(name):
-            os.unlink(name)
+        if temporary.exists():
+            temporary.unlink()
 
 
 def main():

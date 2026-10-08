@@ -24,9 +24,19 @@ does not edit configuration or the board. It rolls back replacement failures.
 The setup script reloads only the verified standalone browser dashboard on 9119.
 Other existing Hermes processes retain their loaded policy until restarted.
 
-Portable checks: 15 tests, 13 passed and two Windows mutex tests skipped. The
-Windows setup runs the two new read/claim boundary checks before installation.
+Portable checks: 16 tests, 14 passed and two Windows mutex tests skipped. The
+Windows setup runs the three new read/claim/replacement checks before installation.
 No native Windows worker acceptance result is claimed from the portable suite.
+
+The Windows permissions report confirms that Lee has read/execute access to the
+administrator-owned policy directory. Maintenance therefore requires elevation;
+this protection is retained. Setup runs its tests and dashboard reload without
+elevation and elevates only the policy installer under the same Lee identity.
+It snapshots and verifies file owner/DACL and directory security descriptors.
+No directory write grants are added. Replacement now makes one exclusive
+temporary-file attempt and immediately reports access denial instead of letting
+Windows tempfile retry permission failures. The original denied attempt stopped
+at temporary-file creation before replacing the first policy file.
 
 ## Remaining execution boundary
 
