@@ -44,3 +44,42 @@ Lab key path previously used: `%USERPROFILE%\.ssh\cct_lab_tunnel_ed25519`. Confi
 GitHub Project #3 and the approved Project #4 selector feed the **already implemented** Jeeves Launch button, which imports queued work into native Kanban Triage. The Kanban board is `%LOCALAPPDATA%\hermes\kanban\boards\landmarksignal\kanban.db`. Import, native execution, review and GitHub result return are distinct. In particular, To-do is not proof of approval or execution; Ready may automatically dispatch. The current planning-only approval gate is not fully enforced; review [execution policy](KANBAN_EXECUTION_POLICY.md) before dispatching new work.
 
 **Non-negotiable:** Both Sparks support existing CCT and other users. Preserve running Forge services, Lab services, NCS/Gloria, Mac access, existing GitHub/Local board data, and the user's explicit priority/review authority. Perform minimally scoped, reversible changes only.
+
+
+## October 15 evening update — verified after the initial incident
+
+This section supersedes the earlier *incident-state* description of an incomplete Forge cutover above. The earlier entries remain as a dated troubleshooting record, not the current configuration.
+
+### Model connectivity and profiles
+
+| Role | Verified endpoint or configuration | Evidence / limitation |
+|---|---|---|
+| Windows `jeeves` orchestrator | `custom`, `chat_completions`, `nvidia/Qwen3.6-35B-A3B-NVFP4`, `http://10.0.0.150:8000/v1`; reasoning effort configured `high` | Native `hermes -p jeeves model` wizard authenticated to Forge, detected the model and saved custom provider named `DGX-Forge Qwen3.6`; Jeeves then responded and performed read-only GitHub Project #4 inspection. Do not treat the configured reasoning value alone as proof of effective inference behavior. |
+| Windows `default` local fallback | `Qwen3.5-9B-Q4_K_M` | `hermes profile list` reported running; don't disable until rollback and startup tested. |
+| DGX-Lab coding backend | `http://127.0.0.1:8001/v1/models` via existing Windows SSH tunnel; `Qwen/Qwen3-Coder-Next-FP8` | PowerShell `Invoke-RestMethod` returned the exact ID on October 15. **This proves endpoint/model discovery, not that a distinct Hermes coding-worker profile exists or inference/tool calling has been tested.** |
+
+The active Windows Hermes profile list reported **only `default` and `jeeves`**, both gateways running. Gloria and other environments must not be assumed to be Windows profiles.
+
+### Model credential handling and gateway
+
+- Forge without Authorization returned HTTP 401; using the existing Forge container credential via Windows PowerShell returned authenticated model discovery. A Windows User-level `FORGE_VLLM_API_KEY` environment variable was created without putting the literal key into GitHub.
+- Initial manual `model.key_env` configuration produced HTTP 401 in browser sessions. Windows User environment had the key while the then-current PowerShell Process environment did not.
+- The gateway launch file `%LOCALAPPDATA%\\hermes\\gateway-service\\Hermes_Gateway.vbs` was edited to copy the user environment value into the child process. This alone was **not proven sufficient**: HTTP 401 persisted afterward. Keep the original timestamped backup and review the change during reliability hardening instead of assuming a detached launcher restart worked.
+- The **native** `hermes -p jeeves model` wizard successfully authenticated to Forge and saved the custom provider. This is the confirmed successful setup path for this installation (Hermes Web Dashboard screenshot displayed v0.21.7). Avoid duplicative provider changes, printing credentials or reconfiguring the shared Forge container.
+
+### Current GitHub/Kanban behavior — do not assume dispatch
+
+- GitHub Project #4 `Hermes Optimization` uses six statuses. Existing `Todo` single-select option was renamed `Backlog` preserving its option ID and other options; Issues #43–#49 remained in Backlog with P0/P1/P2 and execution order 1–6.
+- Issue #37 `OPTIMIZE: Verify effective Hermes settings and establish a lean baseline` was present in Project #4 and, at the time of operator review, appeared queued for Jeeves. The launcher import returned **0 imported, 1 already linked**, resolving to existing native card `t_3aaad718` in `todo`. The card explicitly states intake authorizes planning only and does not approve execution. Reconcile any discrepant GitHub Status using a live field read before assuming it is queued.
+- The Kanban configuration read via `hermes -p jeeves config get kanban --json` reported `dispatch_in_gateway=false`, `review_dispatch=false`, `auto_decompose=false`, `orchestrator_profile=""`, `default_assignee=""`, `dispatch_profiles=null`, `max_in_progress=1`, `max_in_progress_per_profile=1`, `max_spawn=1`. This supports a conservative/manual setup but **does not by itself prove the native Ready transition cannot dispatch**. Check actual worker ownership before execution.
+- The imported #37 card showed assignee `default`, model `profile default`, priority `0`, not Jeeves/Forge. **Do not send the card to Ready to test Forge routing until the worker assignment/model and approval gate are confirmed.**
+
+### Next authorized steps (not yet deployed)
+
+1. Keep local 9B fallback available and verify a repeatable Forge gateway restart/credential persistence, without restarting shared DGX services.
+2. Test authenticated Lab coding inference/tool calls and establish its Hermes worker/profile route separately from the currently working tunnel.
+3. Review #37 Kanban assignment and GitHub intake settings, establish explicit Jeeves orchestration and constrained worker profiles, with `dispatch_in_gateway=false` until actual dispatch gates are verified.
+4. Implement issues #44–#49 under Project #4, starting with tested backups and recovery, and independent monitoring.
+5. Inspect the current launcher for hardcoded `Todo` assumptions following the Project #4 rename, but do not modify runtime code without a scoped test.
+
+**Secrets policy:** No API keys, raw `.env` contents, credential-bearing configs, databases, or private SSH keys in repository evidence.
