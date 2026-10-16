@@ -83,3 +83,18 @@ The active Windows Hermes profile list reported **only `default` and `jeeves`**,
 5. Inspect the current launcher for hardcoded `Todo` assumptions following the Project #4 rename, but do not modify runtime code without a scoped test.
 
 **Secrets policy:** No API keys, raw `.env` contents, credential-bearing configs, databases, or private SSH keys in repository evidence.
+
+
+## October 15 follow-up — `lms-coder` created and smoke-tested
+
+The earlier two-profile observation and statement that Lab inference/tool calling were not yet tested were true **at the time**; this newer operator-supplied Jeeves completion report supersedes them.
+
+- **Windows-native Hermes profile:** `lms-coder`, display/description "LandmarkSignal coding worker"; profile directory `%LOCALAPPDATA%\\hermes\\profiles\\lms-coder\\`. New minimal profile (not a clone). `default` and `jeeves` reported preserved.
+- **Model:** `Qwen/Qwen3-Coder-Next-FP8`, `provider: custom`, `api_mode: chat_completions`, `base_url: http://127.0.0.1:8001/v1`, `reasoning_effort: high`, `temperature: 0.7`. This endpoint is the existing local SSH tunnel to DGX-Lab; **do not** substitute Forge's `10.0.0.150:8000`.
+- **Authentication:** Model discovery from the Windows loopback tunnel succeeded without an API key. That observation does not mean the remote service should be exposed without authentication on the LAN.
+- **Inference smoke test reported by Jeeves:** `hermes chat -p lms-coder -Q -q "What Python version?" --oneshot` returned `3.14.7`. The response shows generation, **not** independent verification of any host Python version (the agent's explanation also mentioned Python 3.12 inconsistently).
+- **Terminal tool-use smoke test reported by Jeeves:** `hermes chat -p lms-coder -Q -q "Run terminal 'echo HELLO_FROM_LMS_CODER'"` returned `HELLO_FROM_LMS_CODER`. This is a useful smoke test, not yet a complete assessment of code generation, tool authorization, or safe repository writes. `--toolsets execute_code` emitted an `Unknown toolsets` warning; do not rely on that flag.
+- **Current three-profile target, per Jeeves report:** `default` = local Qwen3.5-9B; `jeeves` = Forge Qwen3.6; `lms-coder` = Lab Qwen3-Coder-Next. Recheck via `hermes profile list` before changing dispatch.
+- **Not yet done:** Configure explicit Jeeves-to-`lms-coder` delegation, Kanban assignee/worker routing, dispatch gates, resilience of the Lab tunnel after reboot, and reproducible coding-worker quality/evidence checks. Do not move Issue #37 to Ready solely because this profile exists.
+
+The original agent could not commit this documentation from its workspace because no Git remote was configured there. The update is being made through the connected GitHub repository API instead; no local runtime or Spark changes are implied by this doc commit.
