@@ -98,3 +98,16 @@ The earlier two-profile observation and statement that Lab inference/tool callin
 - **Not yet done:** Configure explicit Jeeves-to-`lms-coder` delegation, Kanban assignee/worker routing, dispatch gates, resilience of the Lab tunnel after reboot, and reproducible coding-worker quality/evidence checks. Do not move Issue #37 to Ready solely because this profile exists.
 
 The original agent could not commit this documentation from its workspace because no Git remote was configured there. The update is being made through the connected GitHub repository API instead; no local runtime or Spark changes are implied by this doc commit.
+
+
+## October 15 — First Jeeves → lms-coder delegated coding test (agent-reported)
+
+Jeeves reported invoking `hermes -p lms-coder chat --oneshot --query-file <path>` as a subprocess, with `lms-coder` generating `validate_ipv4.py` and `test_validate_ipv4.py` in an isolated `/tmp/jeeves_ipv4_test/` workspace. Five IPv4 validation tests were reported passing **when run externally by Jeeves**, not by the coding worker itself. Treat this as an initial successful end-to-end delegation smoke test, **not** proof of native Kanban routing, hardened execution enforcement, or a fully functioning autonomous coding workflow.
+
+**Observed blockers:**
+- `lms-coder` terminal tool failed with exit 126 and an unresolved literal `\${config.terminal.cwd}` value. Inspect installed profile settings and Hermes's supported terminal cwd handling; fix only after backing up config, then have the worker run tests *itself*.
+- Worker profile reported one installed skill versus approximately 65 in Jeeves; confirm required tool permissions/skills by actual task rather than copying the full Jeeves skill set blindly.
+- Routing was orchestrator-initiated subprocess invocation following SOUL.md instructions; `dispatch_in_gateway=false` and native Kanban worker selection remain untested. No claim of an enforced profile-routing policy.
+- The source report mentioned pre-existing untracked work and a deletion from the session; do not perform broad git cleanup based on this statement.
+
+**Next verification:** read back current SOUL/config, investigate the cwd placeholder, perform a fresh isolated coding assignment where `lms-coder` runs its own tests, and subsequently test approved native Kanban worker assignment with explicit execution evidence. Keep production cards out of Ready until approval and dispatch semantics are proven.
