@@ -18,6 +18,16 @@ Ready can dispatch automatically; To-do can auto-promote after prerequisites com
 
 The installed hooks require worker Review, allow ordinary project tools and preserve explicit tool-free acceptance calls. They are workflow controls, not an OS sandbox against direct CLI/database bypass. Existing native approvals and configured concurrency remain; global detached cross-profile guard coverage is not claimed.
 
+## GitHub Projects V2 issue and status operations
+
+For routine project-board operations, use the authenticated GitHub CLI from the **actual worker execution environment**. Windows and `LandmarkSignal-Ubuntu` WSL may have different `gh` installations, configuration files and OAuth scopes; verify with `gh auth status` and an authenticated project read before assuming access. Never print, request in chat, copy between environments or commit access tokens. If permissions are missing, report the blocker and request human authorization.
+
+Prefer the native CLI for supported operations: `gh project item-list`, `gh project item-add`, `gh project field-list`, and `gh project item-edit`. For a Status update, obtain the **project ID**, **project item ID**, **Status field ID**, and **single-select option ID** from live CLI output and use `gh project item-edit --id <item-id> --project-id <project-id> --field-id <field-id> --single-select-option-id <option-id>`. Do not confuse an issue number with a project item ID. Check whether each issue is already on the board before adding; operations must be idempotent.
+
+Use GraphQL only for Projects V2 operations not supported by the installed `gh` version, and validate results with an independent read. Do not switch to GitHub REST expecting it to support Projects V2 custom-field mutations. Record verified commands, field/option mapping, item links and post-write status evidence in the task's GitHub issue. Avoid speculative API retries or permission changes.
+
+Follow each project's **actual** status options and launcher configuration; never assume all projects have identical fields, or that setting a queue status authorizes execution. Preserve dispatch/concurrency controls and the human-review boundary. This guidance applies to LandmarkSignal, Career Operations and other authorized GitHub Projects.
+
 ## Review, return and escalation
 
 Lee reviews actual artifacts and requests scoped corrections or accepts through Complete. Explicit GitHub result return posts execution evidence and sets Human Review or Blocked; it never closes the issue. Native Done, a subtask completion or a merged support PR is not blanket issue acceptance.
