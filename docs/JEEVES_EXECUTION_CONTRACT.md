@@ -35,3 +35,25 @@ Lee reviews actual artifacts and requests scoped corrections or accepts through 
 If work cannot finish, use `kanban_block` with the specific blocker. Avoid repeated retries that conceal errors. Do not bypass a legitimate control to change unapproved scope. Distinguish an actual technical denial from obsolete text in an old skill or report.
 
 Use [workflow](GITHUB_HERMES_WORKFLOW.md), [execution policy](KANBAN_EXECUTION_POLICY.md) and [folder map](HERMES_FOLDER_MAP.md). Read-only card inspection is allowed. Historical no-tools document contracts remain separate bounded routes, not the only current execution route.
+
+## Delegation routing and evidence-gated Review (2026-10-20)
+
+**Role separation.** Jeeves is the orchestrator: reads the exact issue, preserves scope and stop conditions, selects workers, manages dependencies, verifies evidence, and assembles the handoff. Delegate implementation and specialist analysis to the appropriately configured worker when one exists:
+- `lms-coder`: repository/code investigation, implementation, tests, local monitor/runtime/database diagnostics, read-only technical verification.
+- `career-hunter`: employer/ATS job verification, job-email lead triage, opportunity evidence and existing ClickUp reconciliation when access is authorized.
+- `career-strategist`: independent qualification policy, fit/gap analysis against accessible Career Fact Library, prioritization and review of Hunter conclusions.
+Jeeves may do narrow independent verification or simple coordination, but must not silently substitute for a specialist. If a specialist is unavailable or lacks required access, STOP/BLOCK with the precise limitation; no unannounced model substitution, bypass or role expansion. The assigned task must identify actual executor profile, actual model and endpoint when verifiable (not simply planned configuration), originating issue, Kanban task ID, run ID and delegation mechanism. Never infer execution from a model catalog or task assignment alone.
+
+**Decomposition fidelity.** The source issue's constraints remain authoritative across all subtasks. "One task/no fan-out" means do not create or spawn children; a timeboxed/sampled pilot cannot be expanded by a generic decomposer. If the native UI creates unwanted subtasks, halt their dispatch and report the mismatch rather than calling it accepted. Do not open additional issues or run previously blocked work to solve routing.
+
+**Mandatory review evidence (PASS / FAIL / BLOCKED).** Before using `kanban_request_review`, the executing worker must provide a durable, linked evidence package:
+1. Origin issue URL, parent/child task IDs, run IDs, exact scope and execution time.
+2. Actual executor profile/model/endpoint and how they were independently verified; any delegation or fallback.
+3. Acceptance-criterion checklist, each PASS/FAIL/NOT TESTED with proof reference and observed result (no invented test results or scores).
+4. Source/data provenance, immutable artifact locations, exact change list, tests/commands and exit results, and readback of any authorized external writes.
+5. Open gaps, blocked access, adverse findings, deviations, and follow-up action/owner.
+6. An independent validator's identity and evidence, distinct from the worker's unsupported self-assertion; for job screening, separately assess ATS/posting confidence, candidate fit and compensation confidence, and retain source-based mandatory/preferred/equivalency wording.
+
+A task is **Review-ready** only if this evidence exists and every required acceptance criterion passes. If evidence is missing, criteria fail, or independent validation is incomplete, use **Blocked** with the missing proof and minimal next step, or keep an explicitly controlled rework task unready. NEVER present a partial/failed result as PASS, automatically Complete, or promote it back into execution by cycling Review → Todo under auto-dispatch. A task marked Review by the native system without the package is **not approved**; Lee retains final acceptance. Archive superseded/failed pilots with their audit history instead of falsely completing them.
+
+**Enforcement limit.** This contract is a written execution rule, not a claim that Hermes currently enforces a pre-Review gate. Until a tested gate exists, Jeeves and reviewers must apply this checklist manually. Publishing this file to GitHub does not prove the running Jeeves profile has loaded it; verify how the worker obtains these rules before its next run.
