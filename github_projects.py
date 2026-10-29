@@ -11,6 +11,13 @@ PROJECTS = {
                   'title': 'LandmarkSignal'},
     'nvrenuf/4': {'owner': OWNER, 'number': 4, 'id': 'PVT_kwHOAFD_484BmKAG',
                   'title': 'Hermes Optimization'},
+    'nvrenuf/9': {'owner': OWNER, 'number': 9, 'id': 'PVT_kwHOAFD_484BpMq3',
+                  'title': 'LandmarkSignal Model Factory'},
+}
+PROJECT_DESTINATIONS = {
+    'nvrenuf/3': {'board': 'landmarksignal', 'assignee': None},
+    'nvrenuf/4': {'board': 'landmarksignal', 'assignee': None},
+    'nvrenuf/9': {'board': 'model-factory', 'assignee': 'model-factory'},
 }
 _discovered = {}
 _catalog_loaded = False
@@ -85,7 +92,7 @@ def discover_projects(reader=gh):
             _discovered.clear()
             _discovered.update(found)
             _catalog_loaded = True
-            return sorted(found.values(), key=lambda p: (p['number'] not in (3, 4), p['number']))
+            return sorted(found.values(), key=lambda p: (p['number'] not in (3, 4, 9), p['number']))
         next_cursor = page.get('endCursor')
         if not next_cursor or next_cursor == cursor or next_cursor in seen_cursors:
             raise RuntimeError('GitHub project pagination stopped advancing; no catalog change made')
@@ -102,6 +109,14 @@ def get_project(selector=DEFAULT_PROJECT):
         raise RuntimeError('Project is not in the discovered catalog; Refresh projects and select an open nvrenuf project')
     return {**project, 'selector': selector,
             'url': f"https://github.com/users/{project['owner']}/projects/{project['number']}"}
+
+
+def get_destination(selector=DEFAULT_PROJECT):
+    project = get_project(selector)
+    destination = PROJECT_DESTINATIONS.get(selector)
+    if not destination:
+        raise RuntimeError('Selected project has no configured Hermes destination; no card created')
+    return {**destination, 'selector': selector, 'project_id': project['id']}
 
 
 def require_import_status(project):
