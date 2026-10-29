@@ -8,7 +8,7 @@ import re
 import sqlite3
 import time
 
-from github_projects import ISSUE_URL, get_project, validate_source
+from github_projects import ISSUE_URL, get_destination, get_project, validate_source
 from github_queue_intake import digest, gh
 from github_handoff_results import graphql, inspect_results
 
@@ -129,7 +129,7 @@ def _comment_body(record, event):
             + 'Accepted by ' + event['actor'] + ' through ' + event['method'] + ' at ' + event['accepted_at'] + '.\n'
             + 'Decision: ' + event['summary'] + '\n'
             + 'PR merge: ' + (event['pr_url'] if event['pr_requirement'] == 'required' else 'Human marked no PR merge required') + '\n\n'
-            + 'Board: landmarksignal\nTask: ' + record['task_id'] + '\nRun: ' + str(run['id'])
+            + 'Board: ' + record['board'] + '\nTask: ' + record['task_id'] + '\nRun: ' + str(run['id'])
             + '\nProfile: ' + str(run.get('profile')) + '\nWorkspace: `' + record['workspace'] + '`\n'
             + 'Source snapshot SHA256: ' + record['source_sha256'] + '\n\n'
             + 'Worker outcome: ' + str(run.get('outcome')) + '\n'
@@ -143,11 +143,12 @@ def accept_complete(root, task_id, snapshot_sha256, summary, pr_requirement, pr_
     if not selector:
         raise RuntimeError('Select the exact originating project')
     project = get_project(selector)
+    destination = get_destination(selector)
     rows = [r for r in inspect_results(root, selector) if r['task_id'] == task_id]
     if len(rows) != 1 or rows[0]['snapshot_sha256'] != snapshot_sha256:
         raise RuntimeError('Task or evidence changed; refresh results before accepting')
     record = rows[0]
-    if record['board'] != 'landmarksignal' or record['project_selector'] != selector:
+    if record['board'] != destination['board'] or record['project_selector'] != selector:
         raise RuntimeError('Board or selected project differs')
     if phrase != 'ACCEPT ' + task_id:
         raise RuntimeError('Type ACCEPT and the exact task ID to record human acceptance')
@@ -160,7 +161,7 @@ def accept_complete(root, task_id, snapshot_sha256, summary, pr_requirement, pr_
         raise RuntimeError('GitHub account must be nvrenuf before acceptance')
     repo, number, live, item, field, done_option = _binding(reader, record, project)
     verified_pr = _verify_pr(reader, repo, pr_requirement, (pr_url or '').strip())
-    database = root / 'kanban/boards/landmarksignal/kanban.db'
+    database = root / 'kanban/boards' / destination['board'] / 'kanban.db'
     with closing(sqlite3.connect(database.resolve().as_uri() + '?mode=rw', uri=True, timeout=10)) as conn:
         conn.row_factory = sqlite3.Row
         contract_row = conn.execute('SELECT completion_contract FROM tasks WHERE id=?', (task_id,)).fetchone()
