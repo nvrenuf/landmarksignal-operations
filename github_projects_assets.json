@@ -8,31 +8,31 @@
   {
     "source": "plugins/landmarksignal-launch/dashboard/dist/index.js",
     "target": "plugins/landmarksignal-launch/dashboard/dist/index.js",
-    "old_sha256": "62cafde8c654634e42697736112703e089bf46a94338b3dd224b1c9f65334ddc",
-    "new_sha256": "7e7eb2c519e0609c850c6e0e31657cb4c86d85fea0a2a153db61f7da7c186842"
+    "old_sha256": "55047fc471078bd1e6a1ef5e9a9fd10a27d7060eb29737127be87203ce784e7c",
+    "new_sha256": "55047fc471078bd1e6a1ef5e9a9fd10a27d7060eb29737127be87203ce784e7c"
   },
   {
     "source": "github_queue_intake.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_queue_intake.py",
-    "old_sha256": "bb42b55575d7d4cbe314fa7c9fef757059d7910efc318a2234b26ded4bfcad91",
-    "new_sha256": "4fea3201173caa7c08790d961fd8aa7e3f7eaf93a6fdf0753971fe19722e8bf0"
+    "old_sha256": "a3ffbf4d8d097ec85256bd0d8a41d24ee97e16abc398da907a4ecdb8ec14882e",
+    "new_sha256": "b259604394b6707ca725e443ebe2f31e53f1111a5630b878a31a4a13856f3e65"
   },
   {
     "source": "github_handoff_results.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_handoff_results.py",
-    "old_sha256": "fd6309c8fd4781c77fafa83a746852db66d0c18d40d0d3c5f118ba291fa533cf",
-    "new_sha256": "2d8a7742b1cff82f4b1be23a55162161e7f303e70de4537b5b78e7c041522478"
+    "old_sha256": "2d8a7742b1cff82f4b1be23a55162161e7f303e70de4537b5b78e7c041522478",
+    "new_sha256": "fb50e82e9d52ddda3f068a0ff649be0e296e1100c0f018590d12cbec5661da75"
   },
   {
     "source": "github_projects.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_projects.py",
-    "old_sha256": "dda76ac1da3f3d978f778d81d367cfd3aa145a5e26fc7269019322a727142863",
-    "new_sha256": "e194e0c5e9382df2b7a770987d6abc1cceb5ff2057016ccdaad5e465023d2a06"
+    "old_sha256": "e194e0c5e9382df2b7a770987d6abc1cceb5ff2057016ccdaad5e465023d2a06",
+    "new_sha256": "2c2114b8ae64e7bdd7b268a2b2230125a7fbe5912c7be08106e95d9e6a0f63ea"
   },
   {
     "source": "github_acceptance.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_acceptance.py",
-    "old_sha256": null,
-    "new_sha256": "9dc0fb4ff639b3879a0ecb4b721b4806dc33c272956c6d5e3aec4ee24dbf2e61"
+    "old_sha256": "9dc0fb4ff639b3879a0ecb4b721b4806dc33c272956c6d5e3aec4ee24dbf2e61",
+    "new_sha256": "d27f1fc2fee818ac5b9f84445bca3a4cb17b56cb80091f201ed980eb5879b1c8"
   }
 ]

@@ -108,6 +108,25 @@ class SelectionTests(unittest.TestCase):
             with self.subTest(selector=selector), self.assertRaises(RuntimeError):
                 intake.read_queue(lambda *args: self.fail('Unexpected GitHub call'), selector)
 
+    def test_explicit_destinations_and_unmapped_projects_fail_closed(self):
+        self.assertEqual(projects.get_destination('nvrenuf/3'),
+                         {'board':'landmarksignal','assignee':None,'selector':'nvrenuf/3',
+                          'project_id':projects.PROJECTS['nvrenuf/3']['id']})
+        self.assertEqual(projects.get_destination('nvrenuf/9'),
+                         {'board':'model-factory','assignee':'model-factory','selector':'nvrenuf/9',
+                          'project_id':projects.PROJECTS['nvrenuf/9']['id']})
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        try:
+            projects._discovered['nvrenuf/5']={'owner':'nvrenuf','number':5,'id':'PVT_5',
+                'title':'New source','status_ready':True,'missing_status':[]}
+            with self.assertRaisesRegex(RuntimeError,'no configured Hermes destination'):
+                projects.get_destination('nvrenuf/5')
+            with self.assertRaisesRegex(RuntimeError,'no configured Hermes destination'):
+                intake.read_queue(lambda *args:self.fail('Unexpected GitHub call'),'nvrenuf/5')
+        finally:
+            projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
+
     def test_missing_status_field_refuses_before_dependencies_or_import(self):
         calls=[]
         def reader(args,payload=None):
@@ -123,7 +142,7 @@ class SelectionTests(unittest.TestCase):
         self.assertEqual([a[1] for a in calls],['user','graphql'])
 
     def test_queue_isolation_identity_and_closed_filter(self):
-        for n in (3,4):
+        for n in (3,4,9):
             calls=[]
             def reader(args,payload=None):
                 calls.append((args,payload))
@@ -154,23 +173,33 @@ class SelectionTests(unittest.TestCase):
 
 
 class ProjectImportTests(intake_tests.ImportTests):
-    def test_newly_discovered_project_is_scoped_and_archived_root_is_deduplicated(self):
-        previous=projects._discovered.copy()
+    def test_model_factory_import_routes_board_and_assignee(self):
+        new=source(9)
+        created=intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/9')
+        self.assertEqual(len(created['created']),1)
+        task=created['created'][0]['task_id']
+        row=self.conn.execute('SELECT * FROM tasks WHERE id=?',(task,)).fetchone()
+        self.assertEqual(row['status'],'triage')
+        self.assertEqual(row['assignee'],'model-factory')
+        self.assertEqual(projects.get_destination('nvrenuf/9')['board'],'model-factory')
+        self.assertEqual(row['idempotency_key'],'github-project:'+new['project_id']+':'+new['issue']['id'])
+
+    def test_discovered_project_without_destination_refuses_import(self):
+        previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        # Build the record before narrowing the catalog to #5: record() resolves the
+        # default nvrenuf/3 project id, which would no longer be in the narrowed catalog.
+        new=record(5)
+        new.update(project_number=5,project_id='PVT_5',project_item_id='PI5_5',
+                   project_fields={'Priority':'P1','Execution Order':7,'Sprint':'Sprint 001'})
         try:
             projects._discovered['nvrenuf/5']={'owner':'nvrenuf','number':5,'id':'PVT_5',
                 'title':'New source','status_ready':True,'missing_status':[]}
-            new=source(5)
-            created=intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/5')
-            self.assertEqual(len(created['created']),1)
-            task=created['created'][0]['task_id']
-            self.assertEqual(self.conn.execute('SELECT idempotency_key FROM tasks WHERE id=?',(task,)).fetchone()[0],
-                             'github-project:PVT_5:'+new['issue']['id'])
-            self.conn.execute("UPDATE tasks SET status='archived' WHERE id=?",(task,));self.conn.commit()
-            repeated=intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/5')
-            self.assertFalse(repeated['created']);self.assertEqual(repeated['existing'][0]['status'],'archived')
-            with self.assertRaises(RuntimeError):intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/3')
+            projects._catalog_loaded=True
+            with self.assertRaisesRegex(RuntimeError,'no configured Hermes destination'):
+                intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/5')
         finally:
             projects._discovered.clear();projects._discovered.update(previous)
+            projects._catalog_loaded=loaded
 
     def test_same_issue_two_projects_duplicate_batch_and_archived_records(self):
         a=source(3); b=source(4)
@@ -281,7 +310,7 @@ class ResultTests(unittest.TestCase):
 class ApiTests(dashboard_tests.LaunchTests):
     def test_catalog_and_selected_import_results(self):
         with patch.object(projects,'discover_projects',return_value=[projects.get_project(key) for key in projects.PROJECTS]):
-            self.assertEqual(len(self.api.github_projects(self.request)['projects']),2)
+            self.assertEqual(len(self.api.github_projects(self.request)['projects']),3)
         for selector in projects.PROJECTS:
             self.request.query_params={'project':selector}
             with patch.object(intake,'run_intake',return_value={}) as run:

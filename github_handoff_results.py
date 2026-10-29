@@ -6,14 +6,15 @@ from pathlib import Path
 import re
 import sqlite3
 from github_queue_intake import gh, digest
-from github_projects import DEFAULT_PROJECT, get_project, validate_source, source_selector, source_key, ISSUE_URL
+from github_projects import DEFAULT_PROJECT, get_destination, get_project, validate_source, source_selector, source_key, ISSUE_URL
 
 URL=ISSUE_URL
 
 
 def inspect_results(root, selector=DEFAULT_PROJECT):
     get_project(selector)
-    database=root/'kanban/boards/landmarksignal/kanban.db'
+    destination=get_destination(selector)
+    database=root/'kanban/boards'/destination['board']/'kanban.db'
     work_root=(root/'landmarksignal-v1/work/github-intake').resolve()
     with closing(sqlite3.connect(database.resolve().as_uri()+'?mode=ro',uri=True)) as conn:
         conn.row_factory=sqlite3.Row
@@ -49,7 +50,7 @@ def inspect_results(root, selector=DEFAULT_PROJECT):
                'source_sha256':digest(source),
                'project_id':source['project_id'],'project_item_id':source['project_item_id'],
                'required_pr_merge':source.get('requires_pr_merge') is True,
-               'board':'landmarksignal','workspace':str(workspace),'run':dict(run),'artifacts':artifacts,
+               'board':destination['board'],'workspace':str(workspace),'run':dict(run),'artifacts':artifacts,
                'proposed_status':'Blocked' if card['status']=='blocked' else 'Human Review',
                'acceptance_verified':False}
             r['snapshot_sha256']=digest(r);result.append(r)
