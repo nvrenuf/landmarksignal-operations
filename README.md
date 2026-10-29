@@ -12,7 +12,8 @@ The visible LandmarkSignal Kanban was cleared by archiving 16 existing cards. Al
 
 - [Operator quickstart](docs/WORKFLOW_QUICKSTART.md): the accepted Issue #30 document.
 - [GitHub-to-Hermes workflow](docs/GITHUB_HERMES_WORKFLOW.md): implemented behavior and remaining limits.
-- [Hermes folder map](docs/HERMES_FOLDER_MAP.md): runtime, profiles, plugins, board, artifacts and backups.
+- [Hermes runtime topology](docs/HERMES_RUNTIME_TOPOLOGY.md): canonical root/profile/gateway/Kanban/skills/Hindsight relationships and new-session resume rules.
+- [Hermes folder map](docs/HERMES_FOLDER_MAP.md): detailed runtime, profiles, plugins, board, artifacts and backups.
 - [Operating model](docs/OPERATING_MODEL.md) and [Jeeves execution contract](docs/JEEVES_EXECUTION_CONTRACT.md): authority and scope.
 - [Execution policy](docs/KANBAN_EXECUTION_POLICY.md): actual controls and their limits.
 - [Acceptance checkpoint](docs/HERMES_WORKFLOW_CHECKPOINT.md): evidence and outstanding work.

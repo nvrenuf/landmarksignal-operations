@@ -1,5 +1,7 @@
 # Hermes folder map — Lee's Windows installation
 
+For the canonical explanation of how root Hermes home, profiles, gateway, Kanban, skills and Hindsight relate, read [HERMES_RUNTIME_TOPOLOGY.md](HERMES_RUNTIME_TOPOLOGY.md) first.
+
 This maps the existing installation, not a new folder structure. `%LOCALAPPDATA%\hermes` is `C:\Users\lee\AppData\Local\hermes` on Lee's laptop. Repository updates and installed runtime copies are separate: merging a PR does not automatically overwrite local files.
 
 ## Locations
