@@ -3,6 +3,10 @@
   var sdk = window.__HERMES_PLUGIN_SDK__, registry = window.__HERMES_PLUGINS__;
   if (!sdk || !registry) return;
   var R = sdk.React, h = R.createElement;
+  // Native option menus can use a light OS surface even when the dashboard is dark.
+  // Set both foreground and background so inherited theme text stays readable.
+  var selectStyle = {backgroundColor: "#ffffff", color: "#172b26", colorScheme: "light", border: "1px solid #829b91", borderRadius: "4px", padding: "6px 8px", maxWidth: "100%"};
+  var optionStyle = {backgroundColor: "#ffffff", color: "#172b26"};
   var base = "/api/plugins/landmarksignal-launch";
   function api(path, init, task) { return sdk.fetchJSON(base + path + "?profile=jeeves&task=" + encodeURIComponent(task || "issue7-status-mapping"), init); }
   function projectApi(path, init, project) { return sdk.fetchJSON(base + path + "?profile=jeeves&project=" + encodeURIComponent(project), init); }
@@ -56,9 +60,9 @@
       h("p",null,"This records your acceptance, completes the native card, posts evidence, sets this project's Status to Done, and closes its issue. A required PR must already be merged."),
       row.acceptance_recorded ? h("p",null,"Acceptance is already recorded. Repeat the same decision to finish any incomplete GitHub step; the evidence comment is deduplicated.") : null,
       h("label",null,"Acceptance summary ",h("textarea",{value:summary,onChange:function(e){setSummary(e.target.value);},maxLength:2000,rows:3,style:{display:"block",width:"100%"}})),
-      h("label",null,"PR merge requirement ",h("select",{value:requirement,onChange:function(e){setRequirement(e.target.value);if(e.target.value!=="required")setPrUrl("");}},
-        h("option",{value:""},"Choose explicitly"),h("option",{value:"required"},"Merged PR required"),
-        h("option",{value:"not_required"},"No PR merge required"))),
+      h("label",null,"PR merge requirement ",h("select",{style:selectStyle,value:requirement,onChange:function(e){setRequirement(e.target.value);if(e.target.value!=="required")setPrUrl("");}},
+        h("option",{style:optionStyle,value:""},"Choose explicitly"),h("option",{style:optionStyle,value:"required"},"Merged PR required"),
+        h("option",{style:optionStyle,value:"not_required"},"No PR merge required"))),
       requirement==="required" ? h("label",null,"Merged PR URL ",h("input",{value:prUrl,onChange:function(e){setPrUrl(e.target.value);},placeholder:"https://github.com/owner/repo/pull/123",style:{width:"100%"}})) : null,
       h("p",null,h("label",null,"Type ACCEPT "+row.task_id+" ",h("input",{value:phrase,onChange:function(e){setPhrase(e.target.value);},autoComplete:"off"}))),
       h("button",{onClick:complete,disabled:props.busy||!canSubmit,style:{padding:"8px 14px",cursor:"pointer"}},
@@ -110,8 +114,8 @@
     R.useEffect(function () { refreshProjects(); }, []);
     var active=projects.find(function (p) { return p.selector===selected; });
     return h("section", null,
-      h("label", null, "Source GitHub project ", h("select", {value:selected, disabled:busy, onChange:function(e){setSelected(e.target.value);}},
-        projects.map(function(p){return h("option",{key:p.selector,value:p.selector},p.title+" · "+p.owner+" #"+p.number);}))),
+      h("label", null, "Source GitHub project ", h("select", {style:selectStyle, value:selected, disabled:busy, onChange:function(e){setSelected(e.target.value);}},
+        projects.map(function(p){return h("option",{style:optionStyle,key:p.selector,value:p.selector},p.title+" · "+p.owner+" #"+p.number);}))),
       h("button",{onClick:refreshProjects,disabled:busy,style:{marginLeft:"8px",padding:"8px 14px"}},busy?"Refreshing…":"Refresh projects"),
       active ? h("p", null, "Active source: ", h("a",{href:active.url,target:"_blank",rel:"noopener noreferrer"},active.title+" (#"+active.number+")")) : null,
       active && !active.status_ready ? h("p",{role:"alert"},"Import unavailable: configure these existing Status options in GitHub: "+active.missing_status.join(", ")+". The launcher will not change project fields.") : null,
@@ -172,8 +176,8 @@
     return h("section", {style: style},
       h(ProjectPanel, null),
       h("strong", null, "Jeeves · Approved document tasks"),
-      h("p", null, h("label", null, "Task ", h("select", {value: selected, onChange: changeTask, disabled: busy},
-        choices.map(function (task) { return h("option", {key: task.selector, value: task.selector}, "Issue #" + task.issue_number + ": " + task.title); })))),
+      h("p", null, h("label", null, "Task ", h("select", {style:selectStyle, value: selected, onChange: changeTask, disabled: busy},
+        choices.map(function (task) { return h("option", {style:optionStyle, key: task.selector, value: task.selector}, "Issue #" + task.issue_number + ": " + task.title); })))),
       h("p", null, data && data.card_status === "done" ? "This document task is complete. Its document remains available below." : "Approve one document draft using the existing local Jeeves model. No tools or children. The result goes to Review."),
       h("p", null, data ? (data.card_status === "done" ? "Completed" : "Card: " + data.card_status + " · Run: " + data.launch_state) : "Checking the existing card…"),
       error ? h("p", {role: "alert", style: {color: "#b84646"}}, error) : null,

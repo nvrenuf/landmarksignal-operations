@@ -16,7 +16,7 @@ from github_projects import DEFAULT_PROJECT, REQUIRED_STATUS, get_destination, g
 OWNER = 'nvrenuf'
 PROJECT = 3
 QUEUED = 'Queued for Jeeves'
-REVISION = '0c2ff854a5c5121c75ac0b0a35241a580ee27fb7'
+REVISION = '4d04303818b61bf3aa09278af48356315515965b'
 QUERY = '''query($owner:String!, $number:Int!, $cursor:String) {
   user(login:$owner) { projectV2(number:$number) { id title number closed owner { ... on User { login } }
     fields(first:100) { pageInfo { hasNextPage }

@@ -8,14 +8,14 @@
   {
     "source": "plugins/landmarksignal-launch/dashboard/dist/index.js",
     "target": "plugins/landmarksignal-launch/dashboard/dist/index.js",
-    "old_sha256": "62cafde8c654634e42697736112703e089bf46a94338b3dd224b1c9f65334ddc",
-    "new_sha256": "7e7eb2c519e0609c850c6e0e31657cb4c86d85fea0a2a153db61f7da7c186842"
+    "old_sha256": "55047fc471078bd1e6a1ef5e9a9fd10a27d7060eb29737127be87203ce784e7c",
+    "new_sha256": "55047fc471078bd1e6a1ef5e9a9fd10a27d7060eb29737127be87203ce784e7c"
   },
   {
     "source": "github_queue_intake.py",
     "target": "plugins/landmarksignal-launch/dashboard/runner/github_queue_intake.py",
-    "old_sha256": "4fea3201173caa7c08790d961fd8aa7e3f7eaf93a6fdf0753971fe19722e8bf0",
-    "new_sha256": "8d64d2643994e13df6b5d8a93b0ada96b270b1ba5ef27c5da079437a962fd3c4"
+    "old_sha256": "a3ffbf4d8d097ec85256bd0d8a41d24ee97e16abc398da907a4ecdb8ec14882e",
+    "new_sha256": "b259604394b6707ca725e443ebe2f31e53f1111a5630b878a31a4a13856f3e65"
   },
   {
     "source": "github_handoff_results.py",

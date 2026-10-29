@@ -181,18 +181,20 @@ class ProjectImportTests(intake_tests.ImportTests):
         row=self.conn.execute('SELECT * FROM tasks WHERE id=?',(task,)).fetchone()
         self.assertEqual(row['status'],'triage')
         self.assertEqual(row['assignee'],'model-factory')
-        self.assertEqual(row['board'],'model-factory')
+        self.assertEqual(projects.get_destination('nvrenuf/9')['board'],'model-factory')
         self.assertEqual(row['idempotency_key'],'github-project:'+new['project_id']+':'+new['issue']['id'])
 
     def test_discovered_project_without_destination_refuses_import(self):
         previous=projects._discovered.copy();loaded=projects._catalog_loaded
+        # Build the record before narrowing the catalog to #5: record() resolves the
+        # default nvrenuf/3 project id, which would no longer be in the narrowed catalog.
+        new=record(5)
+        new.update(project_number=5,project_id='PVT_5',project_item_id='PI5_5',
+                   project_fields={'Priority':'P1','Execution Order':7,'Sprint':'Sprint 001'})
         try:
             projects._discovered['nvrenuf/5']={'owner':'nvrenuf','number':5,'id':'PVT_5',
                 'title':'New source','status_ready':True,'missing_status':[]}
             projects._catalog_loaded=True
-            new=record(5)
-            new.update(project_number=5,project_id='PVT_5',project_item_id='PI5_5',
-                       project_fields={'Priority':'P1','Execution Order':7,'Sprint':'Sprint 001'})
             with self.assertRaisesRegex(RuntimeError,'no configured Hermes destination'):
                 intake.import_records(self.conn,self.kb,[new],self.root,'nvrenuf/5')
         finally:
