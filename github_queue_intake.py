@@ -11,7 +11,7 @@ import re
 import sqlite3
 import subprocess
 import uuid
-from github_projects import DEFAULT_PROJECT, REQUIRED_STATUS, get_project, require_import_status, validate_source, source_key
+from github_projects import DEFAULT_PROJECT, REQUIRED_STATUS, get_destination, get_project, require_import_status, validate_source, source_key
 
 OWNER = 'nvrenuf'
 PROJECT = 3
@@ -53,6 +53,7 @@ def gh(arguments, payload=None):
 
 def read_queue(reader=gh, selector=DEFAULT_PROJECT):
     approved = get_project(selector)
+    get_destination(selector)
     require_import_status(approved)
     if reader(['api', 'user', '--jq', '.login']).strip() != OWNER:
         raise RuntimeError('GitHub must authenticate as nvrenuf; no card created')
@@ -146,7 +147,7 @@ def body(record, source_path):
 
 def import_records(conn, kb, records, work_root, selector=DEFAULT_PROJECT):
     """All native card creations in one transaction; pre-existing cards remain byte-for-byte equal."""
-    get_project(selector)
+    destination = get_destination(selector)
     for record in records:
         validate_source(record, selector)
         if record.get('source_status') != QUEUED or record['issue'].get('state') != 'OPEN':
@@ -186,12 +187,13 @@ def import_records(conn, kb, records, work_root, selector=DEFAULT_PROJECT):
                 with source_path.open('x', encoding='utf-8', newline='\n') as stream:
                     json.dump(record, stream, indent=2, ensure_ascii=False)
             task_id = kb.create_task(conn, title='Issue #%s: %s' % (record['issue']['number'], record['issue']['title']),
-                body=body(record, source_path), triage=True, initial_status='running', assignee=None,
+                body=body(record, source_path), triage=True, initial_status='running', assignee=destination['assignee'],
                 created_by='Lee manual GitHub queue intake', workspace_kind='dir', workspace_path=str(workspace),
-                project_id='', board='landmarksignal', idempotency_key=key(record), max_retries=0)
+                project_id='', board=destination['board'], idempotency_key=key(record), max_retries=0)
             card = dict(conn.execute('SELECT * FROM tasks WHERE id=?', (task_id,)).fetchone())
-            if card['status'] != 'triage' or card.get('assignee') or card.get('claim_lock') or card.get('worker_pid'):
-                raise RuntimeError('Native card did not remain unclaimed Triage')
+            if (card['status'] != 'triage' or card.get('assignee') != destination['assignee']
+                    or card.get('claim_lock') or card.get('worker_pid')):
+                raise RuntimeError('Native card did not remain in the configured Triage destination')
             created.append({'issue_url': url, 'task_id': task_id, 'status': 'triage'})
         after = {r['id']: dict(r) for r in conn.execute('SELECT * FROM tasks')}
         if any(after.get(task_id) != row for task_id, row in before.items()):
@@ -208,21 +210,24 @@ def import_records(conn, kb, records, work_root, selector=DEFAULT_PROJECT):
 
 def run_intake(root, selector=DEFAULT_PROJECT):
     approved = get_project(selector)
+    destination = get_destination(selector)
     from execution_guard_v1_final import ExecutionGuard
     from hermes_cli import kanban_db as kb
     batch = root / 'landmarksignal-v1/intake' / uuid.uuid4().hex
     def apply():
         records = read_queue(selector=selector)
-        board = root / 'kanban/boards/landmarksignal/kanban.db'
+        board = root / 'kanban/boards' / destination['board'] / 'kanban.db'
         if not board.is_file():
-            raise RuntimeError('Existing LandmarkSignal board is missing')
+            raise RuntimeError('Configured Hermes destination board is missing: ' + destination['board'])
         batch.mkdir(parents=True)
         with closing(sqlite3.connect(board.resolve().as_uri() + '?mode=ro', uri=True, timeout=10)) as source, closing(sqlite3.connect(batch / 'board.before.db')) as backup:
             source.backup(backup)
         # Existing SQLite connection is pinned explicitly; native create_task supplies card/event semantics. No schema init or migration.
         with closing(sqlite3.connect(board.resolve().as_uri() + '?mode=rw', uri=True, timeout=10)) as conn:
             result = import_records(conn, kb, records, root / 'landmarksignal-v1/work/github-intake', selector)
-        result.update(project_url=approved['url'], project_selector=selector, queued_count=len(records),
+        result.update(project_url=approved['url'], project_selector=selector,
+                      destination_board=destination['board'], destination_assignee=destination['assignee'],
+                      queued_count=len(records),
                       batch_id=batch.name, backup=str(batch / 'board.before.db'),
                       completed_at=datetime.now(timezone.utc).isoformat(),
                       specification_run=False, model_calls=0, tasks_dispatched=0)
